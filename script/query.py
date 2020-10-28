@@ -4,7 +4,7 @@ import cx_Oracle
 
 # Establish the database connection
 # connection = cx_Oracle.connect("system", "oracle", "dbhost.example.com/orclpdb1")
-connection = cx_Oracle.connect("system", "oracle", "172.17.0.2/xe")
+connection = cx_Oracle.connect("system", "oracle", "172.17.0.3/xe")
 
 
 # Obtain a cursor

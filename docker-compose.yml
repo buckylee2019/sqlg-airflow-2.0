@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  sqlgairflow:
+    image: sqlgairflow
+    build:
+      context: .
+      dockerfile: ./Dockerfile
