@@ -1,4 +1,4 @@
-﻿
+
 # -*- coding: utf-8 -*-
 # Author        : Jesse Wei
 # LastUpdate    : 2018/08/04
@@ -57,5 +57,6 @@ O_PRODUCT = PostgresOperatorWithTemplatedParams(
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
     start_date=airflow.utils.dates.days_ago(7),
     pool='postgres_dwh')
+
 
 
