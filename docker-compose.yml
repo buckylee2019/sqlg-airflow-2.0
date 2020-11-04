@@ -9,14 +9,15 @@ services:
         ports:
           - 5432:5432
         # volumes:
-          #- ./etl_home_ora/bin/initial/database_user.sql:/docker-entrypoint-initdb.d/database_user.sql
-          #- ./etl_home_ora/bin/initial/dwh_tables.sql:/docker-entrypoint-initdb.d/dwh_tables.sql
-          #- ./etl_home_ora/bin/initial/populate_tables.sql:/docker-entrypoint-initdb.d/populate_tables.sql
-          #- ./etl_home_ora/etl_base/sql/DEMO-MERGE.ddl:/docker-entrypoint-initdb.d/DEMO-MERGE.ddl
-          #- ./etl_home_ora/bin/initial/SQLG-WRAPUP.sql:/docker-entrypoint-initdb.d/SQLG-WRAPUP.sql
+          #- ./etl_home/bin/initial/database_user.sql:/docker-entrypoint-initdb.d/database_user.sql
+          #- ./etl_home/bin/initial/dwh_tables.sql:/docker-entrypoint-initdb.d/dwh_tables.sql
+          #- ./etl_home/bin/initial/populate_tables.sql:/docker-entrypoint-initdb.d/populate_tables.sql
+          #- ./etl_home/etl_base/sql/DEMO-MERGE.ddl:/docker-entrypoint-initdb.d/DEMO-MERGE.ddl
+          #- ./etl_home/bin/initial/SQLG-WRAPUP.sql:/docker-entrypoint-initdb.d/SQLG-WRAPUP.sql
     webserver:
         image: jessewei/sqlg-airflow:latest
         restart: always
+        container_name: air_webserver_1
         depends_on:
           - postgres
         environment:
@@ -29,11 +30,11 @@ services:
           
         volumes:
           #- ./dags:/usr/local/airflow/dags
-          - ./etl_home_ora/etl_base/dags:/usr/local/airflow/dags
-          - ./etl_home_ora/etl_base/sql:/usr/local/airflow/sql
-          - ./etl_home_ora/bin:/usr/local/airflow/bin
-          - ./etl_home_ora/logs:/usr/local/airflow/logs
-          - ./etl_home_ora/etl_base/requirements.txt:/requirements.txt
+          - ./etl_home/etl_base/dags:/usr/local/airflow/dags
+          - ./etl_home/etl_base/sql:/usr/local/airflow/sql
+          - ./etl_home/bin:/usr/local/airflow/bin
+          - ./etl_home/logs:/usr/local/airflow/logs
+          - ./etl_home/etl_base/requirements.txt:/requirements.txt
         ports:
           - 8080:8080
         command: webserver
