@@ -1,4 +1,4 @@
-# docker-airflow
+# sqlg-airflow
 [![CI status](https://github.com/jessewei/sqlg-airflow/workflows/CI/badge.svg?branch=master)](https://github.com/jessewei/sqlg-airflow/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
 [![Docker Build status](https://img.shields.io/docker/build/jessewei/sqlg-airflow?style=plastic)](https://hub.docker.com/r/jessewei/sqlg-airflow/tags?ordering=last_updated)
 
@@ -40,7 +40,7 @@ Don't forget to update the airflow images in the docker-compose files to jessewe
 
 ## Usage
 
-By default, docker-airflow runs Airflow with **SequentialExecutor** :
+By default, sqlg-airflow runs Airflow with **SequentialExecutor** :
 
     docker run -d -p 8080:8080 jessewei/sqlg-airflow webserver
 
@@ -67,7 +67,7 @@ Go to Admin -> Connections and Edit "postgres_default" set this values (equivale
 - Login : airflow
 - Password : airflow
 
-For encrypted connection passwords (in Local or Celery Executor), you must have the same fernet_key. By default docker-airflow generates the fernet_key at startup, you have to set an environment variable in the docker-compose (ie: docker-compose-LocalExecutor.yml) file to set the same key accross containers. To generate a fernet_key :
+For encrypted connection passwords (in Local or Celery Executor), you must have the same fernet_key. By default sqlg-airflow generates the fernet_key at startup, you have to set an environment variable in the docker-compose (ie: docker-compose-LocalExecutor.yml) file to set the same key accross containers. To generate a fernet_key :
 
     docker run jessewei/sqlg-airflow python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)"
 
