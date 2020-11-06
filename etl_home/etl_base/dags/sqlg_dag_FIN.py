@@ -56,12 +56,12 @@ D_STG_INITxSYS_STS_STG = ExternalTaskSensor(
 
 # Flow dag    
 # DB_NAME = 'DWH'    
-D_ODS_FIN = airflow.DAG(    "D_ODS_FIN",
+D_ODS_FIN = airflow.DAG(    "D_ODS_FIN",    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_FIN
@@ -154,12 +154,12 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.TB_DETAIL)
 sqlg_jobs_FIN.IS_OPEX_FINAL_V.dag=D_ODS_FIN
 D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.IS_OPEX_FINAL_V)
 
-D_SDM_FIN = airflow.DAG(    "D_SDM_FIN",
+D_SDM_FIN = airflow.DAG(    "D_SDM_FIN",    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_FIN
@@ -225,12 +225,12 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_REVENUE_CATEGO
 sqlg_jobs_FIN.SDM_CONVERSION_RATE.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_CONVERSION_RATE)
 
-M_SDM_FIN = airflow.DAG(    "M_SDM_FIN",
+M_SDM_FIN = airflow.DAG(    "M_SDM_FIN",    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_FIN
@@ -290,12 +290,12 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_MANUFACTURING_
 sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE.dag=M_SDM_FIN
 D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE)
 
-D_DM_FIN = airflow.DAG(    "D_DM_FIN",
+D_DM_FIN = airflow.DAG(    "D_DM_FIN",    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_FIN
@@ -355,12 +355,12 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_SUB_BUSINESS_UN
 sqlg_jobs_FIN.DIM_REPORT_CURRENCY.dag=D_DM_FIN
 D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_REPORT_CURRENCY)
 
-M_DM_FIN = airflow.DAG(    "M_DM_FIN",
+M_DM_FIN = airflow.DAG(    "M_DM_FIN",    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_FIN
