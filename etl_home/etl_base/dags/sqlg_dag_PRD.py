@@ -1,7 +1,4 @@
 ﻿
-
-
-
 # -*- coding: utf-8 -*-
 # Author        : Jesse Wei
 # LastUpdate    : 2020/11/04
@@ -16,52 +13,30 @@ from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable
-# import sqlg_jobs 
+#from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
 import sqlg_jobs_PRD
 
 
-#from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
-
-def f_SYS_STS_STG():
-    logging.info('Control flow: STAGE status ')
-
 args = {
-    'owner': 'airflow',
-    'start_date': airflow.utils.dates.days_ago(1),
+    "owner":["JESSEWEI"],
+    'start_date': airflow.utils.dates.days_ago(0),
     'provide_context': True
 }
 
+ExternalTaskSensor.ui_color = 'white'
+ExternalTaskSensor.ui_fgcolor = 'blue'
+
 tmpl_search_path = Variable.get("sql_path")
 
-my_taskid = 'SYS_STS_STG'
-D_STG_INIT = airflow.DAG(
-    'D_STG_INIT',
-    schedule_interval=timedelta(1),
-    default_args=args,
-    template_searchpath=tmpl_search_path,    
-    max_active_runs=1)
-
-SYS_STS_STG = PythonOperator(task_id=my_taskid,
-                    python_callable=f_SYS_STS_STG,
-                    provide_context=False,
-                    dag=D_STG_INIT)
-
-my_taskid = 'D_STG_INITxSYS_STS_STG'                    
-D_STG_INITxSYS_STS_STG = ExternalTaskSensor(
-    task_id=my_taskid,
-    external_dag_id='D_STG_INIT',
-    external_task_id='SYS_STS_STG',
-    execution_delta=None,  # Same day as today
-    )
-
 # Flow dag    
-# DB_NAME = 'DWH'    
+# DB_NAME = 'DWH' 
 D_ODS_PRD = airflow.DAG(    "D_ODS_PRD",
+    tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_PRD
@@ -394,11 +369,12 @@ sqlg_jobs_PRD.BTMS_EXPENSEPROJECT.dag=D_ODS_PRD
 D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.BTMS_EXPENSEPROJECT)
 
 D_SDM_PRD = airflow.DAG(    "D_SDM_PRD",
+    tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_PRD
@@ -728,11 +704,12 @@ D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD.set_downstream(sqlg_jobs_PRD.SDM_CDOC_DE
 D_ODS_PRDxXXPLM_MODELxD_SDM_PRD.set_downstream(sqlg_jobs_PRD.SDM_CDOC_DELAY_TIME)
 
 D_DM_PRD = airflow.DAG(    "D_DM_PRD",
+    tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_PRD

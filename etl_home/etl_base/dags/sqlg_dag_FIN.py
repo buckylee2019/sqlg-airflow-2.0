@@ -1,7 +1,4 @@
 ﻿
-
-
-
 # -*- coding: utf-8 -*-
 # Author        : Jesse Wei
 # LastUpdate    : 2020/11/04
@@ -16,47 +13,31 @@ from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable
+#from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
 # import sqlg_jobs 
 import sqlg_jobs_FIN
 
 
-#from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
-
-def f_SYS_STS_STG():
-    logging.info('Control flow: STAGE status ')
-
 args = {
-    'owner': 'airflow',
-    'start_date': airflow.utils.dates.days_ago(1),
+#    "owner":["JESSEWEI"],
+    "owner": "JESSEWEI",
+    'start_date': airflow.utils.dates.days_ago(0),
     'provide_context': True
 }
 
+
+
+#ExternalTaskSensor.ui_color = 'white'
+ExternalTaskSensor.ui_color = 'white'
+#ExternalTaskSensor.ui_fgcolor = 'white'
+
+
 tmpl_search_path = Variable.get("sql_path")
-
-my_taskid = 'SYS_STS_STG'
-D_STG_INIT = airflow.DAG(
-    'D_STG_INIT',
-    schedule_interval=timedelta(1),
-    default_args=args,
-    template_searchpath=tmpl_search_path,    
-    max_active_runs=1)
-
-SYS_STS_STG = PythonOperator(task_id=my_taskid,
-                    python_callable=f_SYS_STS_STG,
-                    provide_context=False,
-                    dag=D_STG_INIT)
-
-my_taskid = 'D_STG_INITxSYS_STS_STG'                    
-D_STG_INITxSYS_STS_STG = ExternalTaskSensor(
-    task_id=my_taskid,
-    external_dag_id='D_STG_INIT',
-    external_task_id='SYS_STS_STG',
-    execution_delta=None,  # Same day as today
-    )
 
 # Flow dag    
 # DB_NAME = 'DWH'    
-D_ODS_FIN = airflow.DAG(    "D_ODS_FIN",    tags=["FIN"],
+D_ODS_FIN = airflow.DAG(    "D_ODS_FIN"
+,    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -154,7 +135,8 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.TB_DETAIL)
 sqlg_jobs_FIN.IS_OPEX_FINAL_V.dag=D_ODS_FIN
 D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.IS_OPEX_FINAL_V)
 
-D_SDM_FIN = airflow.DAG(    "D_SDM_FIN",    tags=["FIN"],
+D_SDM_FIN = airflow.DAG(    "D_SDM_FIN"
+,    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -225,7 +207,8 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_REVENUE_CATEGO
 sqlg_jobs_FIN.SDM_CONVERSION_RATE.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_CONVERSION_RATE)
 
-M_SDM_FIN = airflow.DAG(    "M_SDM_FIN",    tags=["FIN"],
+M_SDM_FIN = airflow.DAG(    "M_SDM_FIN"
+,    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -290,7 +273,8 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_MANUFACTURING_
 sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE.dag=M_SDM_FIN
 D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE)
 
-D_DM_FIN = airflow.DAG(    "D_DM_FIN",    tags=["FIN"],
+D_DM_FIN = airflow.DAG(    "D_DM_FIN"
+,    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -355,7 +339,8 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_SUB_BUSINESS_UN
 sqlg_jobs_FIN.DIM_REPORT_CURRENCY.dag=D_DM_FIN
 D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_REPORT_CURRENCY)
 
-M_DM_FIN = airflow.DAG(    "M_DM_FIN",    tags=["FIN"],
+M_DM_FIN = airflow.DAG(    "M_DM_FIN"
+,    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,

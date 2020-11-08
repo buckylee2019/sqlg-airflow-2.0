@@ -28,7 +28,7 @@ MTL_SYSTEM_ITEMS_B = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -39,7 +39,7 @@ FND_COLUMNS = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -50,7 +50,7 @@ FND_LOOKUP_TYPES = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -61,7 +61,7 @@ FND_LOOKUP_VALUES = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -72,7 +72,7 @@ FND_TABLES = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -83,7 +83,7 @@ MTL_CATEGORIES_B = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -94,7 +94,7 @@ MTL_CATEGORY_SETS_B = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -105,7 +105,7 @@ MTL_CUSTOMER_ITEMS = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -116,7 +116,7 @@ MTL_ITEM_CATALOG_GROUPS_B = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -127,7 +127,7 @@ MTL_ITEM_CATEGORIES = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -138,7 +138,7 @@ MTL_ITEM_STATUS_TL = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -149,7 +149,7 @@ MV_PROJECT_ACTIVITY = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -160,7 +160,7 @@ MV_XXPLM_CFDMETADATA = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -171,7 +171,7 @@ MV_XXPLM_EC = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -182,7 +182,7 @@ PRJ_WORKTIMEDATA = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -193,7 +193,7 @@ XXPLM_MODEL = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -204,7 +204,7 @@ XXPLM_PROJECT = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -215,7 +215,7 @@ XXPLM_TFD = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -226,7 +226,7 @@ Z_CDOCUMENT_CHECKING_RULE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -237,7 +237,7 @@ MV_XXPLM_MODEL_CHECKRULE_V = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -248,7 +248,7 @@ XXPLM_EC_CHANGE_TYPE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -259,7 +259,7 @@ NSP_REQ_HEADERS = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -270,7 +270,7 @@ NSP_REQ_LINES = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -281,7 +281,7 @@ PCS_HEADER = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -292,7 +292,7 @@ PCS_LINEEE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -303,7 +303,7 @@ BTMS_EXPENSEPROJECT = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -314,7 +314,7 @@ SDM_EMPLOYEE_H = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -325,7 +325,7 @@ SDM_TEMPLATE_PRD = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -336,7 +336,7 @@ SDM_PLM_CATEGORY = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -347,7 +347,7 @@ SDM_ITEM = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -358,7 +358,7 @@ SDM_ECN_REASON = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -369,7 +369,7 @@ SDM_XXPLM_EC = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -380,7 +380,7 @@ SDM_ECN_CASE_AFTER_MP = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -391,7 +391,7 @@ SDM_CDOC_COMPLETION_RATE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -402,7 +402,7 @@ SDM_UPLOAD_CDOC_COUNT = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -413,7 +413,7 @@ SDM_TOTAL_CDOC_COUNT = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -424,7 +424,7 @@ SDM_PROJECT_CODE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -435,7 +435,7 @@ SDM_TOOLING_TOTAL_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -446,7 +446,7 @@ SDM_DMST_AND_INTL_TRAVEL_EXP = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -457,7 +457,7 @@ SDM_TESTING_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -468,7 +468,7 @@ SDM_CTF_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -479,7 +479,7 @@ SDM_EQT_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -490,7 +490,7 @@ SDM_EPR_MFG_SAMPLE_BUILD_EXP = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -501,7 +501,7 @@ SDM_CDOC_PLANNED_DEV_TIME = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -512,7 +512,7 @@ SDM_PROD_DEV_MLST_DELAY_RATE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -523,7 +523,7 @@ SDM_CDOC_DELAY_TIME = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -534,7 +534,7 @@ FCT_PROD_DEV_MLST_DELAY_RATE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -545,7 +545,7 @@ FCT_ECN_CASE_AFTER_MP = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -556,7 +556,7 @@ FCT_TOOLING_TOTAL_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -567,7 +567,7 @@ FCT_TESTING_EXPENSE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -578,7 +578,7 @@ DIM_ITEM = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -589,7 +589,7 @@ DIM_PLM_CATEGORY = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -600,7 +600,7 @@ DIM_ECN_REASON = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 
@@ -611,7 +611,7 @@ DIM_PROJECT_CODE = OracleOperator(
 #    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
     sql=my_taskid + '/' + my_taskid + '.sql',
     parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
+#    start_date=airflow.utils.dates.days_ago(1),
     pool='postgres_dwh')
 
 

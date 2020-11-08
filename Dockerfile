@@ -86,6 +86,8 @@ RUN set -ex \
 
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
+COPY config/conn.json ${AIRFLOW_USER_HOME}/conn.json
+COPY config/var.json ${AIRFLOW_USER_HOME}/var.json
 
 # Copy oracle driver
 COPY client64 /usr/lib/oracle/11.2/client64

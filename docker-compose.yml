@@ -30,6 +30,7 @@ services:
           
         volumes:
           #- ./dags:/usr/local/airflow/dags
+          #- ./config/var.json:/usr/local/airflow/var.json          
           - ./etl_home/etl_base/dags:/usr/local/airflow/dags
           - ./etl_home/etl_base/sql:/usr/local/airflow/sql
           - ./etl_home/bin:/usr/local/airflow/bin

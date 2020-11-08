@@ -56,12 +56,12 @@ D_STG_INITxSYS_STS_STG = ExternalTaskSensor(
 
 # Flow dag    
 # DB_NAME = 'DWH'    
-D_ODS_MFG = airflow.DAG(    "D_ODS_MFG",
+D_ODS_MFG = airflow.DAG(    "D_ODS_MFG",    tags=["MFG"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_MFG
@@ -91,15 +91,6 @@ D_ODS_MFGxXXWIP_STOREIN_USAGE_TEMPxD_SDM_MFG= ExternalTaskSensor(
     task_id=my_taskid,
     external_dag_id="D_ODS_MFG",
     external_task_id="XXWIP_STOREIN_USAGE_TEMP",
-    execution_delta=None,  # Same day as today
-)
-### D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG
-
-my_taskid = "D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG"
-D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG= ExternalTaskSensor(
-    task_id=my_taskid,
-    external_dag_id="D_SDM_SCM",
-    external_task_id="SDM_ORG_HIER",
     execution_delta=None,  # Same day as today
 )
 ### D_SDM_MFGxSDM_STANDARD_HOURxD_SDM_MFG
@@ -173,11 +164,17 @@ D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.MO_OUTPUT_QTY_WS1)
 sqlg_jobs_MFG.CHANGE_LINE_WS1.dag=D_ODS_MFG
 D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.CHANGE_LINE_WS1)
 
+sqlg_jobs_MFG.LINE_LIST_WS1.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_LIST_WS1)
+
 sqlg_jobs_MFG.TRIAL_FORMULA_WS1.dag=D_ODS_MFG
 D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.TRIAL_FORMULA_WS1)
 
 sqlg_jobs_MFG.TRIAL_FORMULA_SMT_WS1.dag=D_ODS_MFG
 D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.TRIAL_FORMULA_SMT_WS1)
+
+sqlg_jobs_MFG.LINE_WS1.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_WS1)
 
 sqlg_jobs_MFG.ASS_RESULT_WS1.dag=D_ODS_MFG
 D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.ASS_RESULT_WS1)
@@ -206,39 +203,12 @@ D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.WIP_LINES)
 sqlg_jobs_MFG.WIP_DISCRETE_JOBS.dag=D_ODS_MFG
 D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.WIP_DISCRETE_JOBS)
 
-sqlg_jobs_MFG.LINE_WS1.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_WS1)
-
-sqlg_jobs_MFG.LINE_NQJ.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_NQJ)
-
-sqlg_jobs_MFG.LINE_NQX.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_NQX)
-
-sqlg_jobs_MFG.LINE_VN1.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_VN1)
-
-sqlg_jobs_MFG.LINE_WS2.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_WS2)
-
-sqlg_jobs_MFG.LINE_LIST_NQJ.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_LIST_NQJ)
-
-sqlg_jobs_MFG.LINE_LIST_VN1.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_LIST_VN1)
-
-sqlg_jobs_MFG.LINE_LIST_WS1.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_LIST_WS1)
-
-sqlg_jobs_MFG.LINE_LIST_WS2.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_MFG.LINE_LIST_WS2)
-
-D_SDM_MFG = airflow.DAG(    "D_SDM_MFG",
+D_SDM_MFG = airflow.DAG(    "D_SDM_MFG",    tags=["MFG"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_MFG
@@ -268,15 +238,6 @@ D_ODS_MFGxXXWIP_STOREIN_USAGE_TEMPxD_SDM_MFG= ExternalTaskSensor(
     task_id=my_taskid,
     external_dag_id="D_ODS_MFG",
     external_task_id="XXWIP_STOREIN_USAGE_TEMP",
-    execution_delta=None,  # Same day as today
-)
-### D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG
-
-my_taskid = "D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG"
-D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG= ExternalTaskSensor(
-    task_id=my_taskid,
-    external_dag_id="D_SDM_SCM",
-    external_task_id="SDM_ORG_HIER",
     execution_delta=None,  # Same day as today
 )
 ### D_SDM_MFGxSDM_STANDARD_HOURxD_SDM_MFG
@@ -332,11 +293,8 @@ D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_STAGE)
 sqlg_jobs_MFG.SDM_PROCESS.dag=D_SDM_MFG
 D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_PROCESS)
 
-sqlg_jobs_MFG.SDM_SFCS_LINE.dag=D_SDM_MFG
-D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_SFCS_LINE)
-
-sqlg_jobs_MFG.SDM_PRODUCTIVITY_LINE.dag=D_SDM_MFG
-D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_PRODUCTIVITY_LINE)
+sqlg_jobs_MFG.SDM_LINE.dag=D_SDM_MFG
+D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_LINE)
 
 sqlg_jobs_MFG.SDM_SHIFT.dag=D_SDM_MFG
 D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_SHIFT)
@@ -353,7 +311,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_SFCS_OUTPUT_QT
 
 sqlg_jobs_MFG.SDM_STANDARD_HOUR.dag=D_SDM_MFG
 D_ODS_MFGxXXWIP_STOREIN_USAGE_TEMPxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_STANDARD_HOUR)
-D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_STANDARD_HOUR)
 D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_STANDARD_HOUR)
 
 sqlg_jobs_MFG.SDM_DIPATP_SFCS_OUTPUT_HOUR.dag=D_SDM_MFG
@@ -379,7 +336,7 @@ sqlg_jobs_MFG.SDM_ORACLE_OUTPUT_HOUR.dag=D_SDM_MFG
 D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_ORACLE_OUTPUT_HOUR)
 
 sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY.dag=D_SDM_MFG
-D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY)
+D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY)
 D_ODS_QAMxCOPQ_FCTACTUALCOSTxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY)
 D_ODS_QAMxCOPQ_DIMCATEGORYxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY)
 D_ODS_QAMxBI_DIMMULTIORGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_COST_OF_POOR_QLY)
@@ -411,12 +368,12 @@ D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_ACM_SHIPMENT_A
 sqlg_jobs_MFG.SDM_PRD_OTPT_HIT_R_QTY_LMEV.dag=D_SDM_MFG
 D_STG_INITxSYS_STS_STGxD_SDM_MFG.set_downstream(sqlg_jobs_MFG.SDM_PRD_OTPT_HIT_R_QTY_LMEV)
 
-D_DM_MFG = airflow.DAG(    "D_DM_MFG",
+D_DM_MFG = airflow.DAG(    "D_DM_MFG",    tags=["MFG"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
+    start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
 ### D_STG_INITxSYS_STS_STGxD_ODS_MFG
@@ -446,15 +403,6 @@ D_ODS_MFGxXXWIP_STOREIN_USAGE_TEMPxD_SDM_MFG= ExternalTaskSensor(
     task_id=my_taskid,
     external_dag_id="D_ODS_MFG",
     external_task_id="XXWIP_STOREIN_USAGE_TEMP",
-    execution_delta=None,  # Same day as today
-)
-### D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG
-
-my_taskid = "D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG"
-D_SDM_SCMxSDM_ORG_HIERxD_SDM_MFG= ExternalTaskSensor(
-    task_id=my_taskid,
-    external_dag_id="D_SDM_SCM",
-    external_task_id="SDM_ORG_HIER",
     execution_delta=None,  # Same day as today
 )
 ### D_SDM_MFGxSDM_STANDARD_HOURxD_SDM_MFG
@@ -504,11 +452,8 @@ D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_STAGE)
 sqlg_jobs_MFG.DIM_PROCESS.dag=D_DM_MFG
 D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_PROCESS)
 
-sqlg_jobs_MFG.DIM_SFCS_LINE.dag=D_DM_MFG
-D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_SFCS_LINE)
-
-sqlg_jobs_MFG.DIM_PRODUCTIVITY_LINE.dag=D_DM_MFG
-D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_PRODUCTIVITY_LINE)
+sqlg_jobs_MFG.DIM_LINE.dag=D_DM_MFG
+D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_LINE)
 
 sqlg_jobs_MFG.DIM_SHIFT.dag=D_DM_MFG
 D_STG_INITxSYS_STS_STGxD_DM_MFG.set_downstream(sqlg_jobs_MFG.DIM_SHIFT)

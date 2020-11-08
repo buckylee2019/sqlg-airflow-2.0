@@ -1,0 +1,10 @@
+{
+    "oracle_default": {
+        "conn_type": "oracle",
+        "host": "172.17.0.3",
+        "schema": "etladm",
+        "login": "etladm",
+        "password": "etladm",
+        "port": "1521"
+    }
+}
