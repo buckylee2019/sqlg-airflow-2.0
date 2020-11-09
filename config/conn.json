@@ -1,10 +1,18 @@
 {
     "oracle_default": {
         "conn_type": "oracle",
+        "host": "172.17.0.2",
+        "schema": "ods",
+        "login": "system",
+        "password": "oracle",
+        "port": "1521"
+    },
+    "oracle_dev": {
+        "conn_type": "oracle",
         "host": "172.17.0.3",
         "schema": "etladm",
         "login": "etladm",
         "password": "etladm",
         "port": "1521"
-    }
+    }	
 }

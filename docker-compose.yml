@@ -26,11 +26,13 @@ services:
           - EXECUTOR=Local
           - AIRFLOW__CORE__FERNET_KEY=xfaECYb20a2PzNTcIYXFXztTlaEVD43KwUoXeer_83k=
           - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+          - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
           #- AIRFLOW__WEBSERVER__RBAC=False
           
         volumes:
           #- ./dags:/usr/local/airflow/dags
           #- ./config/var.json:/usr/local/airflow/var.json          
+          - ./config/conn.json:/usr/local/airflow/conn.json          
           - ./etl_home/etl_base/dags:/usr/local/airflow/dags
           - ./etl_home/etl_base/sql:/usr/local/airflow/sql
           - ./etl_home/bin:/usr/local/airflow/bin

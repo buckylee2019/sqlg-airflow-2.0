@@ -18,7 +18,7 @@ import sqlg_jobs_PRD
 
 
 args = {
-    "owner":["JESSEWEI"],
+    "owner":"JESSEWEI",
     'start_date': airflow.utils.dates.days_ago(0),
     'provide_context': True
 }

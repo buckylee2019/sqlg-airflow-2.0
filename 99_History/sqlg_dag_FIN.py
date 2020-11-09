@@ -29,7 +29,7 @@ args = {
 
 #ExternalTaskSensor.ui_color = 'white'
 ExternalTaskSensor.ui_color = 'white'
-#ExternalTaskSensor.ui_fgcolor = 'white'
+ExternalTaskSensor.ui_fgcolor = 'blue'
 
 
 tmpl_search_path = Variable.get("sql_path")
