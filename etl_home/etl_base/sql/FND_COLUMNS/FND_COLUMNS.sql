@@ -1,7 +1,7 @@
 
 TRUNCATE TABLE ODS.FND_COLUMNS_TP1;
 
-INSERT /*+ append */ INTO ODS.FND_COLUMNS_TP1 (
+INSERT  INTO ODS.FND_COLUMNS_TP1 (
       APPLICATION_ID                          
       ,TABLE_ID                                
       ,COLUMN_ID                               
@@ -60,7 +60,7 @@ FROM STAGE.FND_COLUMNS MA
 
 TRUNCATE TABLE ODS.FND_COLUMNS;
 
-INSERT /*+ append */ INTO ODS.FND_COLUMNS (
+INSERT  INTO ODS.FND_COLUMNS (
       APPLICATION_ID                          
       ,TABLE_ID                                
       ,COLUMN_ID                               
