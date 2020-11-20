@@ -1,3 +1,4 @@
 {
     "sql_path": "/usr/local/airflow/sql"
+    "DIR_SOURCE": "/usr/local/airflow/etl_home/etl_base/"
 }

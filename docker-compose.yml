@@ -33,6 +33,7 @@ services:
           #- ./dags:/usr/local/airflow/dags
           #- ./config/var.json:/usr/local/airflow/var.json          
           - ./config/conn.json:/usr/local/airflow/conn.json          
+          - ./etl_home/etl_base:/usr/local/airflow/etl_base
           - ./etl_home/etl_base/dags:/usr/local/airflow/dags
           - ./etl_home/etl_base/sql:/usr/local/airflow/sql
           - ./etl_home/bin:/usr/local/airflow/bin

@@ -11,76 +11,65 @@ import airflow
 from datetime import datetime, timedelta
 from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.oracle_operator import OracleOperator
+from airflow.operators.bash_operator import BashOperator
+from airflow.contrib.sensors.file_sensor import FileSensor
+
 
 from airflow import models
 from airflow.models import Variable
 
-# from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
 
-
+from acme.operators.sqlg_oracle import OracleOperatorWithTemplatedParams
+from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH'
-    
+
 my_taskid = "FND_COLUMNS"
-with open('/usr/local/airflow/sql/'+ my_taskid + '/' + my_taskid + '.sql',) as sql_file:
-    sql_list = list(filter(None, sql_file.read().split(';')))
-    
-# print('DEBUG:: ', sql_list) 
-sql_list = map(str.strip, sql_list)
-sql_list = list(filter(None, sql_list))
-
-FND_COLUMNS = OracleOperator(
+FND_COLUMNS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-#    postgres_conn_id='oracle_default',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-#    sql=my_taskid + '/' + my_taskid + '.sql',
-    sql=sql_list,
-#    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-#    start_date=airflow.utils.dates.days_ago(0),
-#    pool='default_pool'
-	)
-
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
 my_taskid = "Z_CDOCUMENT_CHECKING_RULE"
-Z_CDOCUMENT_CHECKING_RULE = OracleOperator(
+Z_CDOCUMENT_CHECKING_RULE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-#    postgres_conn_id='oracle_default',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-#    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-#    start_date=airflow.utils.dates.days_ago(0),
-#    pool='default_pool'
-	)
-
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
 my_taskid = "BTMS_EXPENSEPROJECT"
-with open('/usr/local/airflow/sql/'+ my_taskid + '/' + my_taskid + '.sql',) as sql_file:
-    sql_list = list(filter(None, sql_file.read().split(';')))
-    
-# print('DEBUG:: ', sql_list) 
-sql_list = map(str.strip, sql_list)
-sql_list = list(filter(None, sql_list))
-
-BTMS_EXPENSEPROJECT = OracleOperator(
+BTMS_EXPENSEPROJECT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-#    postgres_conn_id='oracle_default',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=sql_list,
-#    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-#    start_date=airflow.utils.dates.days_ago(0),
-#    pool='default_pool'
-	)
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_EMPLOYEE_H"
-SDM_EMPLOYEE_H = OracleOperator(
+my_taskid = "ODS_UP_consign_vendor_product_map_WH"
+ODS_UP_consign_vendor_product_map_WH = FileSensor(
     task_id=my_taskid,
-#    postgres_conn_id='oracle_default',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-#    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-#    start_date=airflow.utils.dates.days_ago(0),
-#    pool='default_pool'
-	)
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_consign_vendor_product_map.D"
+    )
 
+my_taskid = "ODS_UP_consign_vendor_product_map"
+ODS_UP_consign_vendor_product_map = BashOperator(
+    task_id=my_taskid,
+    bash_command="./ods_imp.sh UPDUP_consign_vendor_product_map\| "
+    )
 
+my_taskid = "ODS_UP_Expense_Budget_product_map_WH"
+ODS_UP_Expense_Budget_product_map_WH = FileSensor(
+    task_id=my_taskid,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_Expense_Budget_product_map.D"
+    )
+
+my_taskid = "ODS_UP_Expense_Budget_product_map"
+ODS_UP_Expense_Budget_product_map = BashOperator(
+    task_id=my_taskid,
+    bash_command="./ods_imp.sh UPDUP_Expense_Budget_product_map\| "
+    )

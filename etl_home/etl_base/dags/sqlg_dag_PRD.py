@@ -39,7 +39,6 @@ D_ODS_PRD = airflow.DAG(    "D_ODS_PRD",
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_PRD
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_PRD"
 D_STG_INITxSYS_STS_STGxD_ODS_PRD= ExternalTaskSensor(
@@ -56,4 +55,16 @@ D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.Z_CDOCUMENT_CHECKI
 
 sqlg_jobs_PRD.BTMS_EXPENSEPROJECT.dag=D_ODS_PRD
 D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.BTMS_EXPENSEPROJECT)
+
+sqlg_jobs_PRD.ODS_UP_consign_vendor_product_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.ODS_UP_consign_vendor_product_map_WH)
+
+sqlg_jobs_PRD.ODS_UP_consign_vendor_product_map.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_consign_vendor_product_map_WH.set_downstream(sqlg_jobs_PRD.ODS_UP_consign_vendor_product_map)
+
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_product_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.ODS_UP_Expense_Budget_product_map_WH)
+
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_product_map.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_product_map_WH.set_downstream(sqlg_jobs_PRD.ODS_UP_Expense_Budget_product_map)
 
