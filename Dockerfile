@@ -83,7 +83,7 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
-
+RUN  mkdir ${AIRFLOW_USER_HOME}/etl_base
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
 COPY config/conn.json ${AIRFLOW_USER_HOME}/conn.json

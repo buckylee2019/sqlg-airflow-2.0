@@ -1,4 +1,11 @@
 {
-    "sql_path": "/usr/local/airflow/sql"
-    "DIR_SOURCE": "/usr/local/airflow/etl_home/etl_base/"
+    "sql_path": "/usr/local/airflow/sql",
+    "DIR_ETLBASE": "/usr/local/airflow/etl_home/etl_base/",
+    "DIR_SOURCE": "/usr/local/airflow/etl_home/etl_base/SOURCE/",
+    "DIR_TEMP": "/usr/local/airflow/etl_home/etl_base/DATA",
+    "DIR_MSG": "/usr/local/airflow/etl_home/etl_base/MSG",
+    "ETLUSER": "etladm",
+    "ETLPWD": "etladm",
+    "DW_HOST": "172.17.0.1",
+	"EDC": "20200101"
 }

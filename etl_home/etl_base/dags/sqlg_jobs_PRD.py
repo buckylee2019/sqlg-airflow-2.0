@@ -22,6 +22,7 @@ from airflow.models import Variable
 from acme.operators.sqlg_oracle import OracleOperatorWithTemplatedParams
 from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH'
+# JOB_TYPE=ODS-MAIN
 
 my_taskid = "FND_COLUMNS"
 FND_COLUMNS = OracleOperatorWithTemplatedParams(
@@ -31,6 +32,7 @@ FND_COLUMNS = OracleOperatorWithTemplatedParams(
         ":END_DT_CHAR"+
         "); End;"
     )
+# JOB_TYPE=ODS-MAIN
 
 my_taskid = "Z_CDOCUMENT_CHECKING_RULE"
 Z_CDOCUMENT_CHECKING_RULE = OracleOperatorWithTemplatedParams(
@@ -40,6 +42,7 @@ Z_CDOCUMENT_CHECKING_RULE = OracleOperatorWithTemplatedParams(
         ":END_DT_CHAR"+
         "); End;"
     )
+# JOB_TYPE=ODS-MAIN
 
 my_taskid = "BTMS_EXPENSEPROJECT"
 BTMS_EXPENSEPROJECT = OracleOperatorWithTemplatedParams(
@@ -49,27 +52,99 @@ BTMS_EXPENSEPROJECT = OracleOperatorWithTemplatedParams(
         ":END_DT_CHAR"+
         "); End;"
     )
+# JOB_TYPE=WATCH
 
 my_taskid = "ODS_UP_consign_vendor_product_map_WH"
 ODS_UP_consign_vendor_product_map_WH = FileSensor(
     task_id=my_taskid,
-    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_consign_vendor_product_map.D"
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_consign_vendor_product_map_{{var.value.EDC}}.D"
     )
+# JOB_TYPE=EXE
 
-my_taskid = "ODS_UP_consign_vendor_product_map"
-ODS_UP_consign_vendor_product_map = BashOperator(
+my_taskid = "ODS_UP_consign_vendor_product_map_CPD"
+ODS_UP_consign_vendor_product_map_CPD = BashOperator(
     task_id=my_taskid,
-    bash_command="./ods_imp.sh UPDUP_consign_vendor_product_map\| "
+    bash_command="/usr/bin/cp {{var.value.DIR_SOURCE}}UPD/PRD/UP_consign_vendor_product_map_{{var.value.EDC}}Y  {{var.value.DIR_TEMP}}/UPD/UP_consign_vendor_product_map.D"
     )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_consign_vendor_product_map"
+UP_consign_vendor_product_map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+# JOB_TYPE=ODS-IMP
+
+my_taskid = "ODS_UP_consign_vendor_product_map_LD"
+ODS_UP_consign_vendor_product_map_LD = BashOperator(
+    task_id=my_taskid,
+    bash_command="./ods_imp1.sh {{var.value.ETLUSER}}  {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.EDC}}"
+    )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_consign_vendor_product_map_ODS"
+UP_consign_vendor_product_map_ODS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_consign_vendor_product_map_H"
+UP_consign_vendor_product_map_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+# JOB_TYPE=WATCH
 
 my_taskid = "ODS_UP_Expense_Budget_product_map_WH"
 ODS_UP_Expense_Budget_product_map_WH = FileSensor(
     task_id=my_taskid,
-    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_Expense_Budget_product_map.D"
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/UP_Expense_Budget_product_map_{{var.value.EDC}}.D"
     )
+# JOB_TYPE=EXE
 
-my_taskid = "ODS_UP_Expense_Budget_product_map"
-ODS_UP_Expense_Budget_product_map = BashOperator(
+my_taskid = "ODS_UP_Expense_Budget_product_map_CPD"
+ODS_UP_Expense_Budget_product_map_CPD = BashOperator(
     task_id=my_taskid,
-    bash_command="./ods_imp.sh UPDUP_Expense_Budget_product_map\| "
+    bash_command="/usr/bin/cp {{var.value.DIR_SOURCE}}UPD/PRD/UP_Expense_Budget_product_map_{{var.value.EDC}}Y  {{var.value.DIR_TEMP}}/UPD/UP_Expense_Budget_product_map.D"
+    )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_Expense_Budget_product_map"
+UP_Expense_Budget_product_map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+# JOB_TYPE=ODS-IMP
+
+my_taskid = "ODS_UP_Expense_Budget_product_map_LD"
+ODS_UP_Expense_Budget_product_map_LD = BashOperator(
+    task_id=my_taskid,
+    bash_command="./ods_imp1.sh {{var.value.ETLUSER}}  {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.EDC}}"
+    )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_Expense_Budget_product_map_ODS"
+UP_Expense_Budget_product_map_ODS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+# JOB_TYPE=SQL
+
+my_taskid = "UP_Expense_Budget_product_map_H"
+UP_Expense_Budget_product_map_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
     )
