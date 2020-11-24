@@ -18,6 +18,7 @@ services:
           - TZ=Asia/Taipei
           - LOAD_EX=n          
           - EXECUTOR=Local
+          - AIRFLOW__CORE__EXECUTOR=LocalExecutor
           - AIRFLOW__CORE__FERNET_KEY=xfaECYb20a2PzNTcIYXFXztTlaEVD43KwUoXeer_83k=
           - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
           - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
