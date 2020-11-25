@@ -179,7 +179,7 @@ FND_COLUMNS_H = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
     parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
     sql= "Begin SQLEXT." + my_taskid + "_SP("+  
-        ":END_DT_CHAR"+
+        ",END_DT_CHAR"+
         "); End;"
     )
 

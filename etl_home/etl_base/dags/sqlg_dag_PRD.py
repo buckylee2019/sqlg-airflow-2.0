@@ -19,7 +19,7 @@ import sqlg_jobs_PRD
 
 args = {
     "owner": "JESSEWEI",
-    'start_date': airflow.utils.dates.days_ago(0),
+    'start_date': airflow.utils.dates.days_ago(1),
     'provide_context': True
 }
 
@@ -30,275 +30,306 @@ tmpl_search_path = Variable.get("sql_path")
 
 # Flow dag    
 # DB_NAME = 'DWH' 
-D_ODS_PRD = airflow.DAG(    "D_ODS_PRD",
+D_ODS_PRD = airflow.DAG(
+    "D_ODS_PRD",
     tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(0),    
-    max_active_runs=1)
+    start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1
+	)
 
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_PRD"
 D_STG_INITxSYS_STS_STGxD_ODS_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_ODS_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_MODELxD_SDM_PRD"
 D_ODS_PRDxXXPLM_MODELxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_MODEL",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD"
 D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MTL_SYSTEM_ITEMS_B",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD"
 D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_EC_CHANGE_TYPE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_EC",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_PRD"
 D_STG_INITxSYS_STS_STGxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD"
 D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="Z_CDOCUMENT_CHECKING_RULE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_CFDMETADATA",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD"
 D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_PROJECT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD"
 D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="NSP_REQ_HEADERS",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD"
 D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_FIN",
     external_task_id="SDM_MANUFACTURING_PLANT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_HEADERxD_SDM_PRD"
 D_ODS_PRDxPCS_HEADERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_HEADER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEEExD_SDM_PRD"
 D_ODS_PRDxPCS_LINEEExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEEE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEERxD_SDM_PRD"
 D_ODS_PRDxPCS_LINEERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD"
 D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_PROJECT_ACTIVITY",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD"
 D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROD_DEV_MLST_DELAY_RATE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_PLANNED_DEV_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_DELAY_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_CASE_AFTER_MP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_CONVERSION_COST",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_PRD"
 D_STG_INITxSYS_STS_STGxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_DMST_AND_INTL_TRAVEL_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_TESTING_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EQT_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_SAMPLE_BUILD_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ITEMxD_DM_PRD"
 D_SDM_PRDxSDM_ITEMxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ITEM",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD"
 D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PLM_CATEGORY",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_REASON",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD"
 D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROJECT_CODE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 sqlg_jobs_PRD.MTL_SYSTEM_ITEMS_B.dag=D_ODS_PRD
 D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.MTL_SYSTEM_ITEMS_B)
@@ -384,275 +415,336 @@ D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.PCS_LINEER)
 sqlg_jobs_PRD.BTMS_EXPENSEPROJECT.dag=D_ODS_PRD
 D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.BTMS_EXPENSEPROJECT)
 
-D_SDM_PRD = airflow.DAG(    "D_SDM_PRD",
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_WH)
+
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_CPD.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_WH.set_downstream(sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_CPD)
+
+sqlg_jobs_PRD.UP_consign_vendor_Prod_map_STG.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_CPD.set_downstream(sqlg_jobs_PRD.UP_consign_vendor_Prod_map_STG)
+
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_LD.dag=D_ODS_PRD
+sqlg_jobs_PRD.UP_consign_vendor_Prod_map_STG.set_downstream(sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_LD)
+
+sqlg_jobs_PRD.UP_consign_vendor_Prod_map.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_consign_vendor_Prod_map_LD.set_downstream(sqlg_jobs_PRD.UP_consign_vendor_Prod_map)
+
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_WH)
+
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_CPD.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_WH.set_downstream(sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_CPD)
+
+sqlg_jobs_PRD.UP_Expense_Budget_Prod_map_STG.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_CPD.set_downstream(sqlg_jobs_PRD.UP_Expense_Budget_Prod_map_STG)
+
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_LD.dag=D_ODS_PRD
+sqlg_jobs_PRD.UP_Expense_Budget_Prod_map_STG.set_downstream(sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_LD)
+
+sqlg_jobs_PRD.UP_Expense_Budget_Prod_map.dag=D_ODS_PRD
+sqlg_jobs_PRD.ODS_UP_Expense_Budget_Prod_map_LD.set_downstream(sqlg_jobs_PRD.UP_Expense_Budget_Prod_map)
+
+D_SDM_PRD = airflow.DAG(
+    "D_SDM_PRD",
     tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(0),    
-    max_active_runs=1)
+    start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1
+	)
 
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_PRD"
 D_STG_INITxSYS_STS_STGxD_ODS_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_ODS_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_MODELxD_SDM_PRD"
 D_ODS_PRDxXXPLM_MODELxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_MODEL",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD"
 D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MTL_SYSTEM_ITEMS_B",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD"
 D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_EC_CHANGE_TYPE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_EC",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_PRD"
 D_STG_INITxSYS_STS_STGxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD"
 D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="Z_CDOCUMENT_CHECKING_RULE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_CFDMETADATA",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD"
 D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_PROJECT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD"
 D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="NSP_REQ_HEADERS",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD"
 D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_FIN",
     external_task_id="SDM_MANUFACTURING_PLANT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_HEADERxD_SDM_PRD"
 D_ODS_PRDxPCS_HEADERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_HEADER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEEExD_SDM_PRD"
 D_ODS_PRDxPCS_LINEEExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEEE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEERxD_SDM_PRD"
 D_ODS_PRDxPCS_LINEERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD"
 D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_PROJECT_ACTIVITY",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD"
 D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROD_DEV_MLST_DELAY_RATE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_PLANNED_DEV_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_DELAY_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_CASE_AFTER_MP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_CONVERSION_COST",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_PRD"
 D_STG_INITxSYS_STS_STGxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_DMST_AND_INTL_TRAVEL_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_TESTING_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EQT_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_SAMPLE_BUILD_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ITEMxD_DM_PRD"
 D_SDM_PRDxSDM_ITEMxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ITEM",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD"
 D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PLM_CATEGORY",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_REASON",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD"
 D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROJECT_CODE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 sqlg_jobs_PRD.SDM_TEMPLATE_PRD.dag=D_SDM_PRD
 D_ODS_PRDxXXPLM_MODELxD_SDM_PRD.set_downstream(sqlg_jobs_PRD.SDM_TEMPLATE_PRD)
@@ -746,275 +838,306 @@ sqlg_jobs_PRD.SDM_TOOLING_TOTAL_EXPENSE.set_downstream(sqlg_jobs_PRD.SDM_PRODUCT
 sqlg_jobs_PRD.SDM_PRODUCT_EXPENSE_BUDGET.dag=D_SDM_PRD
 D_STG_INITxSYS_STS_STGxD_SDM_PRD.set_downstream(sqlg_jobs_PRD.SDM_PRODUCT_EXPENSE_BUDGET)
 
-D_DM_PRD = airflow.DAG(    "D_DM_PRD",
+D_DM_PRD = airflow.DAG(
+    "D_DM_PRD",
     tags=["PRD"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(0),    
-    max_active_runs=1)
+    start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1
+	)
 
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_PRD"
 D_STG_INITxSYS_STS_STGxD_ODS_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_ODS_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_MODELxD_SDM_PRD"
 D_ODS_PRDxXXPLM_MODELxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_MODEL",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD"
 D_ODS_PRDxMTL_SYSTEM_ITEMS_BxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MTL_SYSTEM_ITEMS_B",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD"
 D_ODS_PRDxXXPLM_EC_CHANGE_TYPExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_EC_CHANGE_TYPE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_ECxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_EC",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_PRD"
 D_STG_INITxSYS_STS_STGxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD"
 D_ODS_PRDxZ_CDOCUMENT_CHECKING_RULExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="Z_CDOCUMENT_CHECKING_RULE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD"
 D_ODS_PRDxMV_XXPLM_CFDMETADATAxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_XXPLM_CFDMETADATA",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD"
 D_ODS_PRDxXXPLM_PROJECTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="XXPLM_PROJECT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD"
 D_ODS_PRDxNSP_REQ_HEADERSxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="NSP_REQ_HEADERS",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD"
 D_SDM_FINxSDM_MANUFACTURING_PLANTxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_FIN",
     external_task_id="SDM_MANUFACTURING_PLANT",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_HEADERxD_SDM_PRD"
 D_ODS_PRDxPCS_HEADERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_HEADER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEEExD_SDM_PRD"
 D_ODS_PRDxPCS_LINEEExD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEEE",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxPCS_LINEERxD_SDM_PRD"
 D_ODS_PRDxPCS_LINEERxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="PCS_LINEER",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD"
 D_ODS_PRDxMV_PROJECT_ACTIVITYxD_SDM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD",
     external_task_id="MV_PROJECT_ACTIVITY",
-    execution_delta=None,  # Same day as today
+#    dag=D_SDM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD"
 D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROD_DEV_MLST_DELAY_RATE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_PLANNED_DEV_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_PLANNED_DEV_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD"
 D_SDM_PRDxSDM_CDOC_DELAY_TIMExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_CDOC_DELAY_TIME",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_CASE_AFTER_MPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_CASE_AFTER_MP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_CONVERSION_COSTxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_CONVERSION_COST",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_PRD"
 D_STG_INITxSYS_STS_STGxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_DMST_AND_INTL_TRAVEL_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_DMST_AND_INTL_TRAVEL_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_TESTING_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_TESTING_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD"
 D_SDM_PRDxSDM_EQT_EXPENSExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EQT_EXPENSE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD"
 D_SDM_PRDxSDM_EPR_MFG_SAMPLE_BUILD_EXPxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_EPR_MFG_SAMPLE_BUILD_EXP",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ITEMxD_DM_PRD"
 D_SDM_PRDxSDM_ITEMxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ITEM",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD"
 D_SDM_PRDxSDM_PLM_CATEGORYxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PLM_CATEGORY",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD"
 D_SDM_PRDxSDM_ECN_REASONxD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_ECN_REASON",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 
 my_taskid = "D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD"
 D_SDM_PRDxSDM_PROJECT_CODExD_DM_PRD= ExternalTaskSensor(
-    schedule_interval=None
+#    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
     external_task_id="SDM_PROJECT_CODE",
-    execution_delta=None,  # Same day as today
+#    dag=D_DM_PRD,
+#    execution_delta=None,  # Same day as today
 )
 sqlg_jobs_PRD.FCT_PROD_DEV_MLST_DELAY_RATE.dag=D_DM_PRD
 D_SDM_PRDxSDM_PROD_DEV_MLST_DELAY_RATExD_DM_PRD.set_downstream(sqlg_jobs_PRD.FCT_PROD_DEV_MLST_DELAY_RATE)

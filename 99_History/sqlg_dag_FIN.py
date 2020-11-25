@@ -14,30 +14,24 @@ from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable
 #from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
-# import sqlg_jobs 
 import sqlg_jobs_FIN
 
 
 args = {
-#    "owner":["JESSEWEI"],
     "owner": "JESSEWEI",
     'start_date': airflow.utils.dates.days_ago(0),
     'provide_context': True
 }
 
-
-
-#ExternalTaskSensor.ui_color = 'white'
 ExternalTaskSensor.ui_color = 'white'
 ExternalTaskSensor.ui_fgcolor = 'blue'
-
 
 tmpl_search_path = Variable.get("sql_path")
 
 # Flow dag    
-# DB_NAME = 'DWH'    
-D_ODS_FIN = airflow.DAG(    "D_ODS_FIN"
-,    tags=["FIN"],
+# DB_NAME = 'DWH' 
+D_ODS_FIN = airflow.DAG(    "D_ODS_FIN",
+    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -45,7 +39,6 @@ D_ODS_FIN = airflow.DAG(    "D_ODS_FIN"
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_FIN"
 D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
@@ -54,7 +47,6 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_FIN"
 D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
@@ -63,7 +55,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_SDM_FIN"
 D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
@@ -72,7 +63,6 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_FIN"
 D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
@@ -81,7 +71,6 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_DM_FIN"
 D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
@@ -135,8 +124,8 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.TB_DETAIL)
 sqlg_jobs_FIN.IS_OPEX_FINAL_V.dag=D_ODS_FIN
 D_STG_INITxSYS_STS_STGxD_ODS_FIN.set_downstream(sqlg_jobs_FIN.IS_OPEX_FINAL_V)
 
-D_SDM_FIN = airflow.DAG(    "D_SDM_FIN"
-,    tags=["FIN"],
+D_SDM_FIN = airflow.DAG(    "D_SDM_FIN",
+    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -144,7 +133,6 @@ D_SDM_FIN = airflow.DAG(    "D_SDM_FIN"
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_FIN"
 D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
@@ -153,7 +141,6 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_FIN"
 D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
@@ -162,7 +149,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_SDM_FIN"
 D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
@@ -171,7 +157,6 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_FIN"
 D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
@@ -180,7 +165,6 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_DM_FIN"
 D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
@@ -192,8 +176,17 @@ D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
 sqlg_jobs_FIN.SDM_LEGAL_ENTITY.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_LEGAL_ENTITY)
 
+sqlg_jobs_FIN.SDM_BASE_BUSINESS_UNIT.dag=D_SDM_FIN
+D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_BASE_BUSINESS_UNIT)
+
 sqlg_jobs_FIN.SDM_BUSINESS_UNIT.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_BUSINESS_UNIT)
+
+sqlg_jobs_FIN.SDM_BASE_BUSINESS_GROUP.dag=D_SDM_FIN
+D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_BASE_BUSINESS_GROUP)
+
+sqlg_jobs_FIN.SDM_BUSINESS_GROUP.dag=D_SDM_FIN
+D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_BUSINESS_GROUP)
 
 sqlg_jobs_FIN.SDM_COUNTRY.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_COUNTRY)
@@ -207,8 +200,8 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_REVENUE_CATEGO
 sqlg_jobs_FIN.SDM_CONVERSION_RATE.dag=D_SDM_FIN
 D_STG_INITxSYS_STS_STGxD_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_CONVERSION_RATE)
 
-M_SDM_FIN = airflow.DAG(    "M_SDM_FIN"
-,    tags=["FIN"],
+M_SDM_FIN = airflow.DAG(    "M_SDM_FIN",
+    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -216,7 +209,6 @@ M_SDM_FIN = airflow.DAG(    "M_SDM_FIN"
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_FIN"
 D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
@@ -225,7 +217,6 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_FIN"
 D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
@@ -234,7 +225,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_SDM_FIN"
 D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
@@ -243,7 +233,6 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_FIN"
 D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
@@ -252,7 +241,6 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_DM_FIN"
 D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
@@ -273,8 +261,14 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_MANUFACTURING_
 sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE.dag=M_SDM_FIN
 D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_ADDED_VALUE_RATE)
 
-D_DM_FIN = airflow.DAG(    "D_DM_FIN"
-,    tags=["FIN"],
+sqlg_jobs_FIN.SDM_GROSS_MARGIN.dag=M_SDM_FIN
+D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_GROSS_MARGIN)
+
+sqlg_jobs_FIN.SDM_PLANT_MFG_CONVERSION_COST.dag=M_SDM_FIN
+D_STG_INITxSYS_STS_STGxM_SDM_FIN.set_downstream(sqlg_jobs_FIN.SDM_PLANT_MFG_CONVERSION_COST)
+
+D_DM_FIN = airflow.DAG(    "D_DM_FIN",
+    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -282,7 +276,6 @@ D_DM_FIN = airflow.DAG(    "D_DM_FIN"
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_FIN"
 D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
@@ -291,7 +284,6 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_FIN"
 D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
@@ -300,7 +292,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_SDM_FIN"
 D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
@@ -309,7 +300,6 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_FIN"
 D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
@@ -318,7 +308,6 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_DM_FIN"
 D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
@@ -327,20 +316,11 @@ D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-sqlg_jobs_FIN.DIM_BUSINESS_GROUP.dag=D_DM_FIN
-D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_BUSINESS_GROUP)
-
-sqlg_jobs_FIN.DIM_BUSINESS_UNIT.dag=D_DM_FIN
-D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_BUSINESS_UNIT)
-
-sqlg_jobs_FIN.DIM_SUB_BUSINESS_UNIT.dag=D_DM_FIN
-D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_SUB_BUSINESS_UNIT)
-
 sqlg_jobs_FIN.DIM_REPORT_CURRENCY.dag=D_DM_FIN
 D_STG_INITxSYS_STS_STGxD_DM_FIN.set_downstream(sqlg_jobs_FIN.DIM_REPORT_CURRENCY)
 
-M_DM_FIN = airflow.DAG(    "M_DM_FIN"
-,    tags=["FIN"],
+M_DM_FIN = airflow.DAG(    "M_DM_FIN",
+    tags=["FIN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -348,7 +328,6 @@ M_DM_FIN = airflow.DAG(    "M_DM_FIN"
     start_date=airflow.utils.dates.days_ago(0),    
     max_active_runs=1)
 
-### D_STG_INITxSYS_STS_STGxD_ODS_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_FIN"
 D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
@@ -357,7 +336,6 @@ D_STG_INITxSYS_STS_STGxD_ODS_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_SDM_FIN"
 D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
@@ -366,7 +344,6 @@ D_STG_INITxSYS_STS_STGxD_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_SDM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_SDM_FIN"
 D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
@@ -375,7 +352,6 @@ D_STG_INITxSYS_STS_STGxM_SDM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxD_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxD_DM_FIN"
 D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
@@ -384,7 +360,6 @@ D_STG_INITxSYS_STS_STGxD_DM_FIN= ExternalTaskSensor(
     external_task_id="SYS_STS_STG",
     execution_delta=None,  # Same day as today
 )
-### D_STG_INITxSYS_STS_STGxM_DM_FIN
 
 my_taskid = "D_STG_INITxSYS_STS_STGxM_DM_FIN"
 D_STG_INITxSYS_STS_STGxM_DM_FIN= ExternalTaskSensor(
@@ -401,4 +376,13 @@ D_STG_INITxSYS_STS_STGxM_DM_FIN.set_downstream(sqlg_jobs_FIN.FCT_REALIZED_REVENU
 
 sqlg_jobs_FIN.FCT_MANUFACTURING_REVENUE.dag=M_DM_FIN
 D_STG_INITxSYS_STS_STGxM_DM_FIN.set_downstream(sqlg_jobs_FIN.FCT_MANUFACTURING_REVENUE)
+
+sqlg_jobs_FIN.FCT_ADDED_VALUE_RATE.dag=M_DM_FIN
+D_STG_INITxSYS_STS_STGxM_DM_FIN.set_downstream(sqlg_jobs_FIN.FCT_ADDED_VALUE_RATE)
+
+sqlg_jobs_FIN.FCT_GROSS_MARGIN.dag=M_DM_FIN
+D_STG_INITxSYS_STS_STGxM_DM_FIN.set_downstream(sqlg_jobs_FIN.FCT_GROSS_MARGIN)
+
+sqlg_jobs_FIN.FCT_PLANT_MFG_CONVERSION_COST.dag=M_DM_FIN
+D_STG_INITxSYS_STS_STGxM_DM_FIN.set_downstream(sqlg_jobs_FIN.FCT_PLANT_MFG_CONVERSION_COST)
 
