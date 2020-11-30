@@ -14,7 +14,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable
 #from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
-import sqlg_jobs_CUS
+import sqlg_jobs_CMN
 
 
 args = {
@@ -30,9 +30,9 @@ tmpl_search_path = Variable.get("sql_path")
 
 # Flow dag    
 # DB_NAME = 'DWH' 
-D_ODS_CUS_SRC = airflow.DAG(
-    "D_ODS_CUS_SRC",
-    tags=["CUS"],
+I_SDM_CMN = airflow.DAG(
+    "I_SDM_CMN",
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -42,13 +42,13 @@ D_ODS_CUS_SRC = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -151,15 +151,12 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.HZ_CUST_ACCOUNTS.dag=D_ODS_CUS_SRC
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC.set_downstream(sqlg_jobs_CUS.HZ_CUST_ACCOUNTS)
-
-sqlg_jobs_CUS.HZ_PARTIES.dag=D_ODS_CUS_SRC
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC.set_downstream(sqlg_jobs_CUS.HZ_PARTIES)
+sqlg_jobs_CMN.SDM_CODE.dag=I_SDM_CMN
+D_STG_INITxSYS_STS_STGxI_SDM_CMN.set_downstream(sqlg_jobs_CMN.SDM_CODE)
 
 D_ODS_GBD = airflow.DAG(
     "D_ODS_GBD",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -169,13 +166,13 @@ D_ODS_GBD = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -278,51 +275,51 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_WH.dag=D_ODS_GBD
-D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_WH)
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_WH.dag=D_ODS_GBD
+D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_WH)
 
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_CPD.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_WH.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_CPD)
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_CPD.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_WH.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_CPD)
 
-sqlg_jobs_CUS.UG_GBD_RFQ_TRACKER_STG.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_CPD.set_downstream(sqlg_jobs_CUS.UG_GBD_RFQ_TRACKER_STG)
+sqlg_jobs_CMN.UG_GBD_RFQ_TRACKER_STG.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_CPD.set_downstream(sqlg_jobs_CMN.UG_GBD_RFQ_TRACKER_STG)
 
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_LD.dag=D_ODS_GBD
-sqlg_jobs_CUS.UG_GBD_RFQ_TRACKER_STG.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_LD)
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_LD.dag=D_ODS_GBD
+sqlg_jobs_CMN.UG_GBD_RFQ_TRACKER_STG.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_LD)
 
-sqlg_jobs_CUS.UG_GBD_RFQ_TRACKER.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_RFQ_TRACKER_LD.set_downstream(sqlg_jobs_CUS.UG_GBD_RFQ_TRACKER)
+sqlg_jobs_CMN.UG_GBD_RFQ_TRACKER.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_RFQ_TRACKER_LD.set_downstream(sqlg_jobs_CMN.UG_GBD_RFQ_TRACKER)
 
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_WH.dag=D_ODS_GBD
-D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_WH)
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_WH.dag=D_ODS_GBD
+D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_WH)
 
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_CPD.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_WH.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_CPD)
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_CPD.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_WH.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_CPD)
 
-sqlg_jobs_CUS.UG_GBD_REVENUE_STG.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_CPD.set_downstream(sqlg_jobs_CUS.UG_GBD_REVENUE_STG)
+sqlg_jobs_CMN.UG_GBD_REVENUE_STG.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_CPD.set_downstream(sqlg_jobs_CMN.UG_GBD_REVENUE_STG)
 
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_LD.dag=D_ODS_GBD
-sqlg_jobs_CUS.UG_GBD_REVENUE_STG.set_downstream(sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_LD)
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_LD.dag=D_ODS_GBD
+sqlg_jobs_CMN.UG_GBD_REVENUE_STG.set_downstream(sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_LD)
 
-sqlg_jobs_CUS.UG_GBD_REVENUE.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_GBD_REVENUE_LD.set_downstream(sqlg_jobs_CUS.UG_GBD_REVENUE)
+sqlg_jobs_CMN.UG_GBD_REVENUE.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_GBD_REVENUE_LD.set_downstream(sqlg_jobs_CMN.UG_GBD_REVENUE)
 
-sqlg_jobs_CUS.ODS_UG_SPLIT_RATIO_WH.dag=D_ODS_GBD
-D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CUS.ODS_UG_SPLIT_RATIO_WH)
+sqlg_jobs_CMN.ODS_UG_SPLIT_RATIO_WH.dag=D_ODS_GBD
+D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CMN.ODS_UG_SPLIT_RATIO_WH)
 
-sqlg_jobs_CUS.ODS_UG_SPLIT_RATIO.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_SPLIT_RATIO_WH.set_downstream(sqlg_jobs_CUS.ODS_UG_SPLIT_RATIO)
+sqlg_jobs_CMN.ODS_UG_SPLIT_RATIO.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_SPLIT_RATIO_WH.set_downstream(sqlg_jobs_CMN.ODS_UG_SPLIT_RATIO)
 
-sqlg_jobs_CUS.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH.dag=D_ODS_GBD
-D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CUS.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH)
+sqlg_jobs_CMN.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH.dag=D_ODS_GBD
+D_STG_INITxSYS_STS_STGxD_ODS_GBD.set_downstream(sqlg_jobs_CMN.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH)
 
-sqlg_jobs_CUS.ODS_UG_PIPELINE_PROJECT_CONVERSION.dag=D_ODS_GBD
-sqlg_jobs_CUS.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH.set_downstream(sqlg_jobs_CUS.ODS_UG_PIPELINE_PROJECT_CONVERSION)
+sqlg_jobs_CMN.ODS_UG_PIPELINE_PROJECT_CONVERSION.dag=D_ODS_GBD
+sqlg_jobs_CMN.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH.set_downstream(sqlg_jobs_CMN.ODS_UG_PIPELINE_PROJECT_CONVERSION)
 
 D_ODS_CUS = airflow.DAG(
     "D_ODS_CUS",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -332,13 +329,13 @@ D_ODS_CUS = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -441,93 +438,93 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UC_Customer_Model_Name_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_Model_Name_WH)
+sqlg_jobs_CMN.ODS_UC_Customer_Model_Name_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_Model_Name_WH)
 
-sqlg_jobs_CUS.ODS_UC_Customer_Model_Name.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Customer_Model_Name_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_Model_Name)
+sqlg_jobs_CMN.ODS_UC_Customer_Model_Name.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Customer_Model_Name_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_Model_Name)
 
-sqlg_jobs_CUS.ODS_UC_Customer_PO_Management_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_PO_Management_WH)
+sqlg_jobs_CMN.ODS_UC_Customer_PO_Management_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_PO_Management_WH)
 
-sqlg_jobs_CUS.ODS_UC_Customer_PO_Management.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Customer_PO_Management_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_PO_Management)
+sqlg_jobs_CMN.ODS_UC_Customer_PO_Management.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Customer_PO_Management_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_PO_Management)
 
-sqlg_jobs_CUS.ODS_UC_NC_Customer_Rebate_PN_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_NC_Customer_Rebate_PN_WH)
+sqlg_jobs_CMN.ODS_UC_NC_Customer_Rebate_PN_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_NC_Customer_Rebate_PN_WH)
 
-sqlg_jobs_CUS.ODS_UC_NC_Customer_Rebate_PN.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_NC_Customer_Rebate_PN_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_NC_Customer_Rebate_PN)
+sqlg_jobs_CMN.ODS_UC_NC_Customer_Rebate_PN.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_NC_Customer_Rebate_PN_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_NC_Customer_Rebate_PN)
 
-sqlg_jobs_CUS.ODS_UC_Pre_Project_information_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Pre_Project_information_WH)
+sqlg_jobs_CMN.ODS_UC_Pre_Project_information_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Pre_Project_information_WH)
 
-sqlg_jobs_CUS.ODS_UC_Pre_Project_information.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Pre_Project_information_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Pre_Project_information)
+sqlg_jobs_CMN.ODS_UC_Pre_Project_information.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Pre_Project_information_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Pre_Project_information)
 
-sqlg_jobs_CUS.ODS_UC_Premium_Freight_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Premium_Freight_WH)
+sqlg_jobs_CMN.ODS_UC_Premium_Freight_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Premium_Freight_WH)
 
-sqlg_jobs_CUS.ODS_UC_Premium_Freight.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Premium_Freight_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Premium_Freight)
+sqlg_jobs_CMN.ODS_UC_Premium_Freight.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Premium_Freight_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Premium_Freight)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Critical_Parts_MAP_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Critical_Parts_MAP_WH)
+sqlg_jobs_CMN.ODS_UC_RFQ_Critical_Parts_MAP_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Critical_Parts_MAP_WH)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Critical_Parts_MAP.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_RFQ_Critical_Parts_MAP_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Critical_Parts_MAP)
+sqlg_jobs_CMN.ODS_UC_RFQ_Critical_Parts_MAP.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_RFQ_Critical_Parts_MAP_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Critical_Parts_MAP)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Freight_Estimate_MAP_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Freight_Estimate_MAP_WH)
+sqlg_jobs_CMN.ODS_UC_RFQ_Freight_Estimate_MAP_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Freight_Estimate_MAP_WH)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Freight_Estimate_MAP.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_RFQ_Freight_Estimate_MAP_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Freight_Estimate_MAP)
+sqlg_jobs_CMN.ODS_UC_RFQ_Freight_Estimate_MAP.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_RFQ_Freight_Estimate_MAP_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Freight_Estimate_MAP)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Quotation_History_MAP_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Quotation_History_MAP_WH)
+sqlg_jobs_CMN.ODS_UC_RFQ_Quotation_History_MAP_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Quotation_History_MAP_WH)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_Quotation_History_MAP.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_RFQ_Quotation_History_MAP_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_Quotation_History_MAP)
+sqlg_jobs_CMN.ODS_UC_RFQ_Quotation_History_MAP.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_RFQ_Quotation_History_MAP_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_Quotation_History_MAP)
 
-sqlg_jobs_CUS.ODS_UC_NC_ROYALTY_REPORT_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_NC_ROYALTY_REPORT_WH)
+sqlg_jobs_CMN.ODS_UC_NC_ROYALTY_REPORT_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_NC_ROYALTY_REPORT_WH)
 
-sqlg_jobs_CUS.ODS_UC_NC_ROYALTY_REPORT.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_NC_ROYALTY_REPORT_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_NC_ROYALTY_REPORT)
+sqlg_jobs_CMN.ODS_UC_NC_ROYALTY_REPORT.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_NC_ROYALTY_REPORT_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_NC_ROYALTY_REPORT)
 
-sqlg_jobs_CUS.ODS_UC_Tier1_OEM_Mapping_Table_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Tier1_OEM_Mapping_Table_WH)
+sqlg_jobs_CMN.ODS_UC_Tier1_OEM_Mapping_Table_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Tier1_OEM_Mapping_Table_WH)
 
-sqlg_jobs_CUS.ODS_UC_Tier1_OEM_Mapping_Table.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Tier1_OEM_Mapping_Table_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Tier1_OEM_Mapping_Table)
+sqlg_jobs_CMN.ODS_UC_Tier1_OEM_Mapping_Table.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Tier1_OEM_Mapping_Table_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Tier1_OEM_Mapping_Table)
 
-sqlg_jobs_CUS.ODS_UC_ASCP_Risk_Shipment_Weekly_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_ASCP_Risk_Shipment_Weekly_WH)
+sqlg_jobs_CMN.ODS_UC_ASCP_Risk_Shipment_Weekly_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_ASCP_Risk_Shipment_Weekly_WH)
 
-sqlg_jobs_CUS.ODS_UC_ASCP_Risk_Shipment_Weekly.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_ASCP_Risk_Shipment_Weekly_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_ASCP_Risk_Shipment_Weekly)
+sqlg_jobs_CMN.ODS_UC_ASCP_Risk_Shipment_Weekly.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_ASCP_Risk_Shipment_Weekly_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_ASCP_Risk_Shipment_Weekly)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_SAS_MAP_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_SAS_MAP_WH)
+sqlg_jobs_CMN.ODS_UC_RFQ_SAS_MAP_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_SAS_MAP_WH)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_SAS_MAP.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_RFQ_SAS_MAP_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_SAS_MAP)
+sqlg_jobs_CMN.ODS_UC_RFQ_SAS_MAP.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_RFQ_SAS_MAP_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_SAS_MAP)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_NW_Commodity_Code_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_NW_Commodity_Code_WH)
+sqlg_jobs_CMN.ODS_UC_RFQ_NW_Commodity_Code_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_NW_Commodity_Code_WH)
 
-sqlg_jobs_CUS.ODS_UC_RFQ_NW_Commodity_Code.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_RFQ_NW_Commodity_Code_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_RFQ_NW_Commodity_Code)
+sqlg_jobs_CMN.ODS_UC_RFQ_NW_Commodity_Code.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_RFQ_NW_Commodity_Code_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_RFQ_NW_Commodity_Code)
 
-sqlg_jobs_CUS.ODS_UC_Average_Antenna_of_Notebook_WH.dag=D_ODS_CUS
-D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Average_Antenna_of_Notebook_WH)
+sqlg_jobs_CMN.ODS_UC_Average_Antenna_of_Notebook_WH.dag=D_ODS_CUS
+D_STG_INITxSYS_STS_STGxD_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Average_Antenna_of_Notebook_WH)
 
-sqlg_jobs_CUS.ODS_UC_Average_Antenna_of_Notebook.dag=D_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Average_Antenna_of_Notebook_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Average_Antenna_of_Notebook)
+sqlg_jobs_CMN.ODS_UC_Average_Antenna_of_Notebook.dag=D_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Average_Antenna_of_Notebook_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Average_Antenna_of_Notebook)
 
 D_ODS_HRM = airflow.DAG(
     "D_ODS_HRM",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -537,13 +534,13 @@ D_ODS_HRM = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -646,99 +643,99 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UH_SENIORITY_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_SENIORITY_WH)
+sqlg_jobs_CMN.ODS_UH_SENIORITY_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_SENIORITY_WH)
 
-sqlg_jobs_CUS.ODS_UH_SENIORITY.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_SENIORITY_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_SENIORITY)
+sqlg_jobs_CMN.ODS_UH_SENIORITY.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_SENIORITY_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_SENIORITY)
 
-sqlg_jobs_CUS.ODS_UH_HEADCOUNT_BUDGET_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_HEADCOUNT_BUDGET_WH)
+sqlg_jobs_CMN.ODS_UH_HEADCOUNT_BUDGET_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_HEADCOUNT_BUDGET_WH)
 
-sqlg_jobs_CUS.ODS_UH_HEADCOUNT_BUDGET.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_HEADCOUNT_BUDGET_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_HEADCOUNT_BUDGET)
+sqlg_jobs_CMN.ODS_UH_HEADCOUNT_BUDGET.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_HEADCOUNT_BUDGET_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_HEADCOUNT_BUDGET)
 
-sqlg_jobs_CUS.ODS_UH_RDEXPENSE_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_RDEXPENSE_WH)
+sqlg_jobs_CMN.ODS_UH_RDEXPENSE_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_RDEXPENSE_WH)
 
-sqlg_jobs_CUS.ODS_UH_RDEXPENSE.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_RDEXPENSE_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_RDEXPENSE)
+sqlg_jobs_CMN.ODS_UH_RDEXPENSE.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_RDEXPENSE_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_RDEXPENSE)
 
-sqlg_jobs_CUS.ODS_UH_WORKPLACE_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKPLACE_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_WORKPLACE_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKPLACE_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_WORKPLACE_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_WORKPLACE_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKPLACE_MAPPING)
+sqlg_jobs_CMN.ODS_UH_WORKPLACE_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_WORKPLACE_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKPLACE_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKLOCATION_WH)
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKLOCATION_WH)
 
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKLOCATION)
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKLOCATION)
 
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKLOCATION_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKLOCATION_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_WORKLOCATION_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_WORKLOCATION_MAPPING)
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_WORKLOCATION_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_WORKLOCATION_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE_BU_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTABBRE_BU_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE_BU_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTABBRE_BU_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE_BU_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE_BU_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTABBRE_BU_MAPPING)
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE_BU_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE_BU_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTABBRE_BU_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTABBRE_WH)
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTABBRE_WH)
 
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_DEPTABBRE_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTABBRE)
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_DEPTABBRE_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTABBRE)
 
-sqlg_jobs_CUS.ODS_UH_DEPTUNIT_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTUNIT_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_DEPTUNIT_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTUNIT_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_DEPTUNIT_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_DEPTUNIT_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_DEPTUNIT_MAPPING)
+sqlg_jobs_CMN.ODS_UH_DEPTUNIT_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_DEPTUNIT_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_DEPTUNIT_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_WH)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_WH)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_CATEGORY_MAPPING)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_CATEGORY_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_SUBCATE_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_PERSONNEL_SUBCATE_MAPPING)
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_SUBCATE_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_PERSONNEL_SUBCATE_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH)
+sqlg_jobs_CMN.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH)
 
-sqlg_jobs_CUS.ODS_UH_EMPLOYMENTTYPE_MAPPING.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_EMPLOYMENTTYPE_MAPPING)
+sqlg_jobs_CMN.ODS_UH_EMPLOYMENTTYPE_MAPPING.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_EMPLOYMENTTYPE_MAPPING_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_EMPLOYMENTTYPE_MAPPING)
 
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_WH)
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_WH)
 
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_STAFFSTATUS)
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_STAFFSTATUS)
 
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH.dag=D_ODS_HRM
-D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH)
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH.dag=D_ODS_HRM
+D_STG_INITxSYS_STS_STGxD_ODS_HRM.set_downstream(sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH)
 
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_TOBE_ONBOARD.dag=D_ODS_HRM
-sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH.set_downstream(sqlg_jobs_CUS.ODS_UH_STAFFSTATUS_TOBE_ONBOARD)
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_TOBE_ONBOARD.dag=D_ODS_HRM
+sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH.set_downstream(sqlg_jobs_CMN.ODS_UH_STAFFSTATUS_TOBE_ONBOARD)
 
 D_ODS_MFG = airflow.DAG(
     "D_ODS_MFG",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -748,13 +745,13 @@ D_ODS_MFG = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -857,51 +854,51 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UM_RiskShipmentUpload_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_RiskShipmentUpload_WH)
+sqlg_jobs_CMN.ODS_UM_RiskShipmentUpload_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_RiskShipmentUpload_WH)
 
-sqlg_jobs_CUS.ODS_UM_RiskShipmentUpload.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_RiskShipmentUpload_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_RiskShipmentUpload)
+sqlg_jobs_CMN.ODS_UM_RiskShipmentUpload.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_RiskShipmentUpload_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_RiskShipmentUpload)
 
-sqlg_jobs_CUS.ODS_UM_SMT_TIME_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_SMT_TIME_WH)
+sqlg_jobs_CMN.ODS_UM_SMT_TIME_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_SMT_TIME_WH)
 
-sqlg_jobs_CUS.ODS_UM_SMT_TIME.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_SMT_TIME_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_SMT_TIME)
+sqlg_jobs_CMN.ODS_UM_SMT_TIME.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_SMT_TIME_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_SMT_TIME)
 
-sqlg_jobs_CUS.ODS_UM_SMT_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_SMT_WH)
+sqlg_jobs_CMN.ODS_UM_SMT_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_SMT_WH)
 
-sqlg_jobs_CUS.ODS_UM_SMT.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_SMT_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_SMT)
+sqlg_jobs_CMN.ODS_UM_SMT.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_SMT_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_SMT)
 
-sqlg_jobs_CUS.ODS_UM_ForecastUploadModel_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_ForecastUploadModel_WH)
+sqlg_jobs_CMN.ODS_UM_ForecastUploadModel_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_ForecastUploadModel_WH)
 
-sqlg_jobs_CUS.ODS_UM_ForecastUploadModel.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_ForecastUploadModel_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_ForecastUploadModel)
+sqlg_jobs_CMN.ODS_UM_ForecastUploadModel.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_ForecastUploadModel_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_ForecastUploadModel)
 
-sqlg_jobs_CUS.ODS_UM_Shift_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_Shift_WH)
+sqlg_jobs_CMN.ODS_UM_Shift_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_Shift_WH)
 
-sqlg_jobs_CUS.ODS_UM_Shift.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_Shift_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_Shift)
+sqlg_jobs_CMN.ODS_UM_Shift.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_Shift_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_Shift)
 
-sqlg_jobs_CUS.ODS_UM_Resource_Mapping_Process_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_Resource_Mapping_Process_WH)
+sqlg_jobs_CMN.ODS_UM_Resource_Mapping_Process_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_Resource_Mapping_Process_WH)
 
-sqlg_jobs_CUS.ODS_UM_Resource_Mapping_Process.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_Resource_Mapping_Process_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_Resource_Mapping_Process)
+sqlg_jobs_CMN.ODS_UM_Resource_Mapping_Process.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_Resource_Mapping_Process_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_Resource_Mapping_Process)
 
-sqlg_jobs_CUS.ODS_UM_Work_in_Process_Category_WH.dag=D_ODS_MFG
-D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CUS.ODS_UM_Work_in_Process_Category_WH)
+sqlg_jobs_CMN.ODS_UM_Work_in_Process_Category_WH.dag=D_ODS_MFG
+D_STG_INITxSYS_STS_STGxD_ODS_MFG.set_downstream(sqlg_jobs_CMN.ODS_UM_Work_in_Process_Category_WH)
 
-sqlg_jobs_CUS.ODS_UM_Work_in_Process_Category.dag=D_ODS_MFG
-sqlg_jobs_CUS.ODS_UM_Work_in_Process_Category_WH.set_downstream(sqlg_jobs_CUS.ODS_UM_Work_in_Process_Category)
+sqlg_jobs_CMN.ODS_UM_Work_in_Process_Category.dag=D_ODS_MFG
+sqlg_jobs_CMN.ODS_UM_Work_in_Process_Category_WH.set_downstream(sqlg_jobs_CMN.ODS_UM_Work_in_Process_Category)
 
 D_ODS_PRD = airflow.DAG(
     "D_ODS_PRD",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -911,13 +908,13 @@ D_ODS_PRD = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1020,21 +1017,21 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UP_consign_vendor_product_map_WH.dag=D_ODS_PRD
-D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_CUS.ODS_UP_consign_vendor_product_map_WH)
+sqlg_jobs_CMN.ODS_UP_consign_vendor_product_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_CMN.ODS_UP_consign_vendor_product_map_WH)
 
-sqlg_jobs_CUS.ODS_UP_consign_vendor_product_map.dag=D_ODS_PRD
-sqlg_jobs_CUS.ODS_UP_consign_vendor_product_map_WH.set_downstream(sqlg_jobs_CUS.ODS_UP_consign_vendor_product_map)
+sqlg_jobs_CMN.ODS_UP_consign_vendor_product_map.dag=D_ODS_PRD
+sqlg_jobs_CMN.ODS_UP_consign_vendor_product_map_WH.set_downstream(sqlg_jobs_CMN.ODS_UP_consign_vendor_product_map)
 
-sqlg_jobs_CUS.ODS_UP_Expense_Budget_product_map_WH.dag=D_ODS_PRD
-D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_CUS.ODS_UP_Expense_Budget_product_map_WH)
+sqlg_jobs_CMN.ODS_UP_Expense_Budget_product_map_WH.dag=D_ODS_PRD
+D_STG_INITxSYS_STS_STGxD_ODS_PRD.set_downstream(sqlg_jobs_CMN.ODS_UP_Expense_Budget_product_map_WH)
 
-sqlg_jobs_CUS.ODS_UP_Expense_Budget_product_map.dag=D_ODS_PRD
-sqlg_jobs_CUS.ODS_UP_Expense_Budget_product_map_WH.set_downstream(sqlg_jobs_CUS.ODS_UP_Expense_Budget_product_map)
+sqlg_jobs_CMN.ODS_UP_Expense_Budget_product_map.dag=D_ODS_PRD
+sqlg_jobs_CMN.ODS_UP_Expense_Budget_product_map_WH.set_downstream(sqlg_jobs_CMN.ODS_UP_Expense_Budget_product_map)
 
 D_ODS_QAM = airflow.DAG(
     "D_ODS_QAM",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -1044,13 +1041,13 @@ D_ODS_QAM = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1153,105 +1150,105 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UQ_MtlScrapCost_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_MtlScrapCost_WH)
+sqlg_jobs_CMN.ODS_UQ_MtlScrapCost_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_MtlScrapCost_WH)
 
-sqlg_jobs_CUS.ODS_UQ_MtlScrapCost.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_MtlScrapCost_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_MtlScrapCost)
+sqlg_jobs_CMN.ODS_UQ_MtlScrapCost.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_MtlScrapCost_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_MtlScrapCost)
 
-sqlg_jobs_CUS.ODS_UQ_CSDCustomerPaidService_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_CSDCustomerPaidService_WH)
+sqlg_jobs_CMN.ODS_UQ_CSDCustomerPaidService_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_CSDCustomerPaidService_WH)
 
-sqlg_jobs_CUS.ODS_UQ_CSDCustomerPaidService.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_CSDCustomerPaidService_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_CSDCustomerPaidService)
+sqlg_jobs_CMN.ODS_UQ_CSDCustomerPaidService.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_CSDCustomerPaidService_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_CSDCustomerPaidService)
 
-sqlg_jobs_CUS.ODS_UQ_CSDPlannedShippingQty_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_CSDPlannedShippingQty_WH)
+sqlg_jobs_CMN.ODS_UQ_CSDPlannedShippingQty_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_CSDPlannedShippingQty_WH)
 
-sqlg_jobs_CUS.ODS_UQ_CSDPlannedShippingQty.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_CSDPlannedShippingQty_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_CSDPlannedShippingQty)
+sqlg_jobs_CMN.ODS_UQ_CSDPlannedShippingQty.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_CSDPlannedShippingQty_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_CSDPlannedShippingQty)
 
-sqlg_jobs_CUS.ODS_UQ_InventoryOwner_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_InventoryOwner_WH)
+sqlg_jobs_CMN.ODS_UQ_InventoryOwner_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_InventoryOwner_WH)
 
-sqlg_jobs_CUS.ODS_UQ_InventoryOwner.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_InventoryOwner_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_InventoryOwner)
+sqlg_jobs_CMN.ODS_UQ_InventoryOwner.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_InventoryOwner_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_InventoryOwner)
 
-sqlg_jobs_CUS.ODS_UQ_OnSiteReworkQty_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_OnSiteReworkQty_WH)
+sqlg_jobs_CMN.ODS_UQ_OnSiteReworkQty_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_OnSiteReworkQty_WH)
 
-sqlg_jobs_CUS.ODS_UQ_OnSiteReworkQty.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_OnSiteReworkQty_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_OnSiteReworkQty)
+sqlg_jobs_CMN.ODS_UQ_OnSiteReworkQty.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_OnSiteReworkQty_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_OnSiteReworkQty)
 
-sqlg_jobs_CUS.ODS_UQ_QualityReturnQty_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_QualityReturnQty_WH)
+sqlg_jobs_CMN.ODS_UQ_QualityReturnQty_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_QualityReturnQty_WH)
 
-sqlg_jobs_CUS.ODS_UQ_QualityReturnQty.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_QualityReturnQty_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_QualityReturnQty)
+sqlg_jobs_CMN.ODS_UQ_QualityReturnQty.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_QualityReturnQty_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_QualityReturnQty)
 
-sqlg_jobs_CUS.ODS_UQ_JQMList_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_JQMList_WH)
+sqlg_jobs_CMN.ODS_UQ_JQMList_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_JQMList_WH)
 
-sqlg_jobs_CUS.ODS_UQ_JQMList.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_JQMList_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_JQMList)
+sqlg_jobs_CMN.ODS_UQ_JQMList.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_JQMList_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_JQMList)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S1_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S1_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S1_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S1_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S1.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S1_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S1)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S1.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S1_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S1)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQJ_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQJ_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQJ_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQJ_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQJ.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQJ_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQJ)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQJ.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQJ_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQJ)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NYC_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NYC_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NYC_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NYC_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NYC.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NYC_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NYC)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NYC.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NYC_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NYC)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQX_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQX_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQX_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQX_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQX.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQX_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NQX)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQX.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQX_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NQX)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NVN_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NVN_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NVN_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NVN_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NVN.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NVN_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_NVN)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NVN.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NVN_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_NVN)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S2_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S2_WH)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S2_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S2_WH)
 
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S2.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S2_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_IQC_DailyManpower_S2)
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S2.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S2_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_IQC_DailyManpower_S2)
 
-sqlg_jobs_CUS.ODS_UQ_InventoryOwnerList_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_InventoryOwnerList_WH)
+sqlg_jobs_CMN.ODS_UQ_InventoryOwnerList_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_InventoryOwnerList_WH)
 
-sqlg_jobs_CUS.ODS_UQ_InventoryOwnerList.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_InventoryOwnerList_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_InventoryOwnerList)
+sqlg_jobs_CMN.ODS_UQ_InventoryOwnerList.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_InventoryOwnerList_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_InventoryOwnerList)
 
-sqlg_jobs_CUS.ODS_UQ_MoPartType_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_MoPartType_WH)
+sqlg_jobs_CMN.ODS_UQ_MoPartType_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_MoPartType_WH)
 
-sqlg_jobs_CUS.ODS_UQ_MoPartType.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_MoPartType_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_MoPartType)
+sqlg_jobs_CMN.ODS_UQ_MoPartType.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_MoPartType_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_MoPartType)
 
-sqlg_jobs_CUS.ODS_UQ_Escape_WH.dag=D_ODS_QAM
-D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_Escape_WH)
+sqlg_jobs_CMN.ODS_UQ_Escape_WH.dag=D_ODS_QAM
+D_STG_INITxSYS_STS_STGxD_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_Escape_WH)
 
-sqlg_jobs_CUS.ODS_UQ_Escape.dag=D_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_Escape_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_Escape)
+sqlg_jobs_CMN.ODS_UQ_Escape.dag=D_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_Escape_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_Escape)
 
 D_ODS_SCM = airflow.DAG(
     "D_ODS_SCM",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -1261,13 +1258,13 @@ D_ODS_SCM = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1370,15 +1367,15 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_US_reason_code_WH.dag=D_ODS_SCM
-D_STG_INITxSYS_STS_STGxD_ODS_SCM.set_downstream(sqlg_jobs_CUS.ODS_US_reason_code_WH)
+sqlg_jobs_CMN.ODS_US_reason_code_WH.dag=D_ODS_SCM
+D_STG_INITxSYS_STS_STGxD_ODS_SCM.set_downstream(sqlg_jobs_CMN.ODS_US_reason_code_WH)
 
-sqlg_jobs_CUS.ODS_US_reason_code.dag=D_ODS_SCM
-sqlg_jobs_CUS.ODS_US_reason_code_WH.set_downstream(sqlg_jobs_CUS.ODS_US_reason_code)
+sqlg_jobs_CMN.ODS_US_reason_code.dag=D_ODS_SCM
+sqlg_jobs_CMN.ODS_US_reason_code_WH.set_downstream(sqlg_jobs_CMN.ODS_US_reason_code)
 
 W_ODS_QAM = airflow.DAG(
     "W_ODS_QAM",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -1388,13 +1385,13 @@ W_ODS_QAM = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1497,27 +1494,27 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UQ_FaultInjectionRecord_WH.dag=W_ODS_QAM
-D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_FaultInjectionRecord_WH)
+sqlg_jobs_CMN.ODS_UQ_FaultInjectionRecord_WH.dag=W_ODS_QAM
+D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_FaultInjectionRecord_WH)
 
-sqlg_jobs_CUS.ODS_UQ_FaultInjectionRecord.dag=W_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_FaultInjectionRecord_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_FaultInjectionRecord)
+sqlg_jobs_CMN.ODS_UQ_FaultInjectionRecord.dag=W_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_FaultInjectionRecord_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_FaultInjectionRecord)
 
-sqlg_jobs_CUS.ODS_UQ_QSCANTrackingRecord_WH.dag=W_ODS_QAM
-D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_QSCANTrackingRecord_WH)
+sqlg_jobs_CMN.ODS_UQ_QSCANTrackingRecord_WH.dag=W_ODS_QAM
+D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_QSCANTrackingRecord_WH)
 
-sqlg_jobs_CUS.ODS_UQ_QSCANTrackingRecord.dag=W_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_QSCANTrackingRecord_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_QSCANTrackingRecord)
+sqlg_jobs_CMN.ODS_UQ_QSCANTrackingRecord.dag=W_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_QSCANTrackingRecord_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_QSCANTrackingRecord)
 
-sqlg_jobs_CUS.ODS_UQ_ModelMPInfo_WH.dag=W_ODS_QAM
-D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CUS.ODS_UQ_ModelMPInfo_WH)
+sqlg_jobs_CMN.ODS_UQ_ModelMPInfo_WH.dag=W_ODS_QAM
+D_STG_INITxSYS_STS_STGxW_ODS_QAM.set_downstream(sqlg_jobs_CMN.ODS_UQ_ModelMPInfo_WH)
 
-sqlg_jobs_CUS.ODS_UQ_ModelMPInfo.dag=W_ODS_QAM
-sqlg_jobs_CUS.ODS_UQ_ModelMPInfo_WH.set_downstream(sqlg_jobs_CUS.ODS_UQ_ModelMPInfo)
+sqlg_jobs_CMN.ODS_UQ_ModelMPInfo.dag=W_ODS_QAM
+sqlg_jobs_CMN.ODS_UQ_ModelMPInfo_WH.set_downstream(sqlg_jobs_CMN.ODS_UQ_ModelMPInfo)
 
 M_ODS_CUS = airflow.DAG(
     "M_ODS_CUS",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -1527,13 +1524,13 @@ M_ODS_CUS = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1636,51 +1633,51 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UC_Customer_Grouping_Map_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_Grouping_Map_WH)
+sqlg_jobs_CMN.ODS_UC_Customer_Grouping_Map_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_Grouping_Map_WH)
 
-sqlg_jobs_CUS.ODS_UC_Customer_Grouping_Map.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Customer_Grouping_Map_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Customer_Grouping_Map)
+sqlg_jobs_CMN.ODS_UC_Customer_Grouping_Map.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Customer_Grouping_Map_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Customer_Grouping_Map)
 
-sqlg_jobs_CUS.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH)
+sqlg_jobs_CMN.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH)
 
-sqlg_jobs_CUS.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE)
+sqlg_jobs_CMN.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_GROUP_CUSTOMER_INDUSTRY_TYPE)
 
-sqlg_jobs_CUS.ODS_UC_Market_Share_Market_Shipment_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Market_Share_Market_Shipment_WH)
+sqlg_jobs_CMN.ODS_UC_Market_Share_Market_Shipment_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Market_Share_Market_Shipment_WH)
 
-sqlg_jobs_CUS.ODS_UC_Market_Share_Market_Shipment.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Market_Share_Market_Shipment_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Market_Share_Market_Shipment)
+sqlg_jobs_CMN.ODS_UC_Market_Share_Market_Shipment.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Market_Share_Market_Shipment_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Market_Share_Market_Shipment)
 
-sqlg_jobs_CUS.ODS_UC_Market_Share_WNC_Shipment_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Market_Share_WNC_Shipment_WH)
+sqlg_jobs_CMN.ODS_UC_Market_Share_WNC_Shipment_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Market_Share_WNC_Shipment_WH)
 
-sqlg_jobs_CUS.ODS_UC_Market_Share_WNC_Shipment.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Market_Share_WNC_Shipment_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Market_Share_WNC_Shipment)
+sqlg_jobs_CMN.ODS_UC_Market_Share_WNC_Shipment.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Market_Share_WNC_Shipment_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Market_Share_WNC_Shipment)
 
-sqlg_jobs_CUS.ODS_UC_Model_product_map_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Model_product_map_WH)
+sqlg_jobs_CMN.ODS_UC_Model_product_map_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Model_product_map_WH)
 
-sqlg_jobs_CUS.ODS_UC_Model_product_map.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Model_product_map_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Model_product_map)
+sqlg_jobs_CMN.ODS_UC_Model_product_map.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Model_product_map_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Model_product_map)
 
-sqlg_jobs_CUS.ODS_UC_Product_Mapping_Table_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_Product_Mapping_Table_WH)
+sqlg_jobs_CMN.ODS_UC_Product_Mapping_Table_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_Product_Mapping_Table_WH)
 
-sqlg_jobs_CUS.ODS_UC_Product_Mapping_Table.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_Product_Mapping_Table_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_Product_Mapping_Table)
+sqlg_jobs_CMN.ODS_UC_Product_Mapping_Table.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_Product_Mapping_Table_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_Product_Mapping_Table)
 
-sqlg_jobs_CUS.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH.dag=M_ODS_CUS
-D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH)
+sqlg_jobs_CMN.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH.dag=M_ODS_CUS
+D_STG_INITxSYS_STS_STGxM_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH)
 
-sqlg_jobs_CUS.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE.dag=M_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE)
+sqlg_jobs_CMN.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE.dag=M_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE)
 
 Y_ODS_CUS = airflow.DAG(
     "Y_ODS_CUS",
-    tags=["CUS"],
+    tags=["CMN"],
     schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
@@ -1690,13 +1687,13 @@ Y_ODS_CUS = airflow.DAG(
 	)
 
 
-my_taskid = "D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC"
-D_STG_INITxSYS_STS_STGxD_ODS_CUS_SRC= ExternalTaskSensor(
+my_taskid = "D_STG_INITxSYS_STS_STGxI_SDM_CMN"
+D_STG_INITxSYS_STS_STGxI_SDM_CMN= ExternalTaskSensor(
 #    schedule_interval=None,
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
     external_task_id="SYS_STS_STG",
-#    dag=D_ODS_CUS_SRC,
+#    dag=I_SDM_CMN,
 #    execution_delta=None,  # Same day as today
 )
 
@@ -1799,9 +1796,9 @@ D_STG_INITxSYS_STS_STGxY_ODS_CUS= ExternalTaskSensor(
 #    dag=Y_ODS_CUS,
 #    execution_delta=None,  # Same day as today
 )
-sqlg_jobs_CUS.ODS_UC_SW_Centric_Product_Model_WH.dag=Y_ODS_CUS
-D_STG_INITxSYS_STS_STGxY_ODS_CUS.set_downstream(sqlg_jobs_CUS.ODS_UC_SW_Centric_Product_Model_WH)
+sqlg_jobs_CMN.ODS_UC_SW_Centric_Product_Model_WH.dag=Y_ODS_CUS
+D_STG_INITxSYS_STS_STGxY_ODS_CUS.set_downstream(sqlg_jobs_CMN.ODS_UC_SW_Centric_Product_Model_WH)
 
-sqlg_jobs_CUS.ODS_UC_SW_Centric_Product_Model.dag=Y_ODS_CUS
-sqlg_jobs_CUS.ODS_UC_SW_Centric_Product_Model_WH.set_downstream(sqlg_jobs_CUS.ODS_UC_SW_Centric_Product_Model)
+sqlg_jobs_CMN.ODS_UC_SW_Centric_Product_Model.dag=Y_ODS_CUS
+sqlg_jobs_CMN.ODS_UC_SW_Centric_Product_Model_WH.set_downstream(sqlg_jobs_CMN.ODS_UC_SW_Centric_Product_Model)
 

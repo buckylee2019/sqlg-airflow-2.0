@@ -24,8 +24,8 @@ from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH'
 
 # JOB_TYPE=ODS-MAIN
-my_taskid = "HZ_CUST_ACCOUNTS"
-HZ_CUST_ACCOUNTS = OracleOperatorWithTemplatedParams(
+my_taskid = "SDM_CODE"
+SDM_CODE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
     parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
     sql= "Begin SQLEXT." + my_taskid + "_SP("+  
@@ -34,8 +34,8 @@ HZ_CUST_ACCOUNTS = OracleOperatorWithTemplatedParams(
     )
 
 # JOB_TYPE=ODS-MAIN
-my_taskid = "HZ_PARTIES"
-HZ_PARTIES = OracleOperatorWithTemplatedParams(
+my_taskid = "SDM_EMPLOYEE_H"
+SDM_EMPLOYEE_H = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
     parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
     sql= "Begin SQLEXT." + my_taskid + "_SP("+  

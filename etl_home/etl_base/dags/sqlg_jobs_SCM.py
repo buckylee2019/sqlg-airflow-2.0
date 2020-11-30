@@ -22,3 +22,483 @@ from airflow.models import Variable
 from acme.operators.sqlg_oracle import OracleOperatorWithTemplatedParams
 from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH'
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "FND_COLUMNS_H"
+FND_COLUMNS_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "BRAND_CATEGORY"
+BRAND_CATEGORY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "BRAND_DETAIL_SCORE_V"
+BRAND_DETAIL_SCORE_V = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PLM_BRAND_V"
+PLM_BRAND_V = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "VPE_RANKING_VALUE"
+VPE_RANKING_VALUE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "UG_RFQ"
+UG_RFQ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_CATEGORY_B"
+MTL_CATEGORY_B = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_CROSS_REFERENCES_VL"
+MTL_CROSS_REFERENCES_VL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_ORG_ORG_DEF"
+MV_ORG_ORG_DEF = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_HEADERS_ALL"
+PO_HEADERS_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_LINES_ALL"
+PO_LINES_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "AP_SUPPLIERS"
+AP_SUPPLIERS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "AP_SUPPLIER_SITES_ALL"
+AP_SUPPLIER_SITES_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "CST_COST_TYPES"
+CST_COST_TYPES = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "CST_ITEM_COSTS"
+CST_ITEM_COSTS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_SECONDARY_INVENTORIES"
+MTL_SECONDARY_INVENTORIES = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "RCV_TRANSACTIONS"
+RCV_TRANSACTIONS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "BOM_COMPONENTS_B"
+BOM_COMPONENTS_B = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "BOM_STRUCTURES_B"
+BOM_STRUCTURES_B = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_ONHAND_QUANTITIES_DETAIL"
+MTL_ONHAND_QUANTITIES_DETAIL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_PARAMETERS"
+MTL_PARAMETERS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_TRANSACTION_REASONS"
+MTL_TRANSACTION_REASONS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_TRANSACTION_TYPES"
+MTL_TRANSACTION_TYPES = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_MTL_CATEGORIES_B_KFV"
+MV_MTL_CATEGORIES_B_KFV = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_MTL_ITEM_LOCATIONS_KFV"
+MV_MTL_ITEM_LOCATIONS_KFV = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "UI_INV_ADS_SUMMARY_V"
+UI_INV_ADS_SUMMARY_V = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "ERFQ_ITEMVENDOR"
+ERFQ_ITEMVENDOR = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "ERFQ_PRICEDATA_OBC"
+ERFQ_PRICEDATA_OBC = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_RISK_SHIPMENT_UPLOAD"
+SCM_RISK_SHIPMENT_UPLOAD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "XXPO_HUB_INVENTORY_TEMP"
+XXPO_HUB_INVENTORY_TEMP = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "VPE_BRAND_SCORE_FINAL_ADJ"
+VPE_BRAND_SCORE_FINAL_ADJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "NSP_PO_LINES"
+NSP_PO_LINES = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "NSP_PO_HEADERS"
+NSP_PO_HEADERS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "RVL"
+RVL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_LINE_LOCATIONS_ALL"
+PO_LINE_LOCATIONS_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_REQUISITION_LINES_ALL"
+PO_REQUISITION_LINES_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_REQ_DISTRIBUTIONS_ALL"
+PO_REQ_DISTRIBUTIONS_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "XXPO_STR_ALL"
+XXPO_STR_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_INV_AGE_CUST_ACT_CODE"
+SCM_INV_AGE_CUST_ACT_CODE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_INV_AGE_CUST_DETAIL"
+SCM_INV_AGE_CUST_DETAIL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_INV_AGE_CUST_REPLY"
+SCM_INV_AGE_CUST_REPLY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_INV_AGE_CUST_WH"
+SCM_INV_AGE_CUST_WH = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "XXSCR_DOWNSIZING_CANCEL_TEMP"
+XXSCR_DOWNSIZING_CANCEL_TEMP = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "PO_DISTRIBUTIONS_ALL"
+PO_DISTRIBUTIONS_ALL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SCM_INV_AGE_OBS_DETAIL"
+SCM_INV_AGE_OBS_DETAIL = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MTL_CROSS_REFERENCES_B"
+MTL_CROSS_REFERENCES_B = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_PER_PEOPLE_F"
+MV_PER_PEOPLE_F = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_EMPLOYEE_H"
+SDM_EMPLOYEE_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ",${END_DT_CHAR}"+
+        "); End;"
+    )
