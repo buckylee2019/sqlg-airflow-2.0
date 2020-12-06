@@ -5,7 +5,7 @@ rem 		docker-compose -f docker-compose.yml up -d
 rem ) else 	docker-compose -f docker-compose-%1.yml up -d   
 rem echo %DATE%-%TIME%
 
-docker-compose -f docker-compose.yml up -d  
+docker-compose -f docker-compose-Celery.yml up -d  
 
 REM sleep 20, wait db init then set variable 
 ping 127.0.0.1 -n 60 > nul

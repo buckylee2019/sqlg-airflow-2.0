@@ -19,9 +19,7 @@ firstName = "Peter"
 #          FROM hr.employees
 #          WHERE manager_id = :mid AND first_name = :fn"""
 # cursor.execute(sql, mid = managerId, fn = firstName)
-sql = """SELECT count(*)
-         FROM ods.FND_COLUMNS
-         """
+sql = "SELECT count(*) FROM ods.FND_COLUMNS "
 cursor.execute(sql)
 
 # Loop over the result set
