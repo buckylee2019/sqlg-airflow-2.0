@@ -11,7 +11,7 @@ services:
     webserver:
         image: jessewei/sqlg-airflow:latest
         restart: always
-        container_name: air_webserver_1
+        container_name: air_webserver_0
         depends_on:
           - postgres
         environment:
@@ -23,6 +23,10 @@ services:
           - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
           - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
           #- AIRFLOW__WEBSERVER__RBAC=False          
+        logging:
+            options:
+                max-size: 10m
+                max-file: "3"            
         volumes:
           - ./config/var.json:/usr/local/airflow/var.json          
           - ./config/conn.json:/usr/local/airflow/conn.json          

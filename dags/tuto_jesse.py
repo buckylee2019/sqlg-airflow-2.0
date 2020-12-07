@@ -5,6 +5,12 @@ http://airflow.readthedocs.org/en/latest/tutorial.html
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from datetime import datetime, timedelta
+import os
+tmp = os.path.basename(__file__)
+tmp1 = os.path.splitext(tmp)[0]
+
+filename = os.path.basename(__file__)
+dag_name = os.path.splitext(filename)[0]
 
 
 default_args = {
@@ -22,7 +28,11 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
 }
 
-dag = DAG("tutorial", default_args=default_args, schedule_interval=timedelta(1))
+dag = DAG(dag_name, 
+    default_args=default_args, 
+    schedule_interval=timedelta(1),
+    tags=[dag_name],
+    )
 
 # t1, t2 and t3 are examples of tasks created by instantiating operators
 t1 = BashOperator(task_id="print_date", bash_command="date", dag=dag)

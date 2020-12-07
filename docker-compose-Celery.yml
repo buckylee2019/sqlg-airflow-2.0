@@ -46,7 +46,7 @@ services:
           - ./etl_home/logs:/usr/local/airflow/logs
           - ./etl_home/etl_base/requirements.txt:/requirements.txt
         ports:
-            - "8082:8080"
+            - "8081:8080"
         command: webserver
         #healthcheck:
         #    test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]

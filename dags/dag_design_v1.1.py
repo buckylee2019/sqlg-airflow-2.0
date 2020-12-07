@@ -17,14 +17,15 @@ dag.start_date = default_args['start_date']
 
 # This path is used in the code below. This should identify where the code is being executed from.
 # *****
-path = ‘/PATH_TO_DAG/bash_dag_example'
+path = 'c/temp'
 
 # STDOUT ‘Hello World' with redirect to out.txt
 create_file= BashOperator(task_id='save-bash', bash_command='echo “Hello World” > {path}/out.txt'.format(path=path))
 # print the contents of out.txt to STDOUT
 print_file=BashOperator( task_id='print-file', bash_command='cat {path}/outs.txt'.format(path=path))
 # clone/copy the data into another file
-bash_cmd='cp {path}/out.txt {path}/out_copy.txt'.format(path=path) copy_file=BashOperator(task_id='copy-file', bash_command=bash_cmd)
+bash_cmd='cp {path}/out.txt {path}/out_copy.txt'.format(path=path) 
+copy_file=BashOperator(task_id='copy-file', bash_command=bash_cmd)
 # delete the files that were created
 bash_cmd='rm -f {path}/out.txt && rm -f {path}/out_copy.txt'.format(path=path)
 delete_files = BashOperator(task_id='delete-files', bash_command=bash_cmd)
