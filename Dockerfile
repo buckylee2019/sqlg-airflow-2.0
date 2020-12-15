@@ -66,9 +66,14 @@ RUN set -ex \
     && pip install pyOpenSSL \
     && pip install ndg-httpsclient \
     && pip install pyasn1 \
+
     && pip install cx_Oracle \	
     && pip install apache-airflow[crypto,celery,postgres,hive,jdbc,mysql,ssh${AIRFLOW_DEPS:+,}${AIRFLOW_DEPS}]==${AIRFLOW_VERSION} \
 		--constraint "https://raw.githubusercontent.com/apache/airflow/constraints-1.10.12/constraints-3.7.txt" \
+#	test for multinode
+#	&& pip install pandas==0.18.1 \
+	&& pip install celery==3.1.23 \
+# 	
     && pip install 'redis==3.2' \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
@@ -84,6 +89,8 @@ RUN set -ex \
         /usr/share/doc-base
 
 RUN  mkdir ${AIRFLOW_USER_HOME}/etl_base
+# For etl cp file permission
+RUN  find ${AIRFLOW_USER_HOME}/etl_base -type d -exec chmod +w {} +
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
 COPY config/conn.json ${AIRFLOW_USER_HOME}/conn.json

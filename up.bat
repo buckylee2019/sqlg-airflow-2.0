@@ -1,19 +1,75 @@
-echo on
+echo off
 
-rem if "%1" == "" (
-rem 		docker-compose -f docker-compose.yml up -d   
-rem ) else 	docker-compose -f docker-compose-%1.yml up -d   
-rem echo %DATE%-%TIME%
+echo Batch start: %DATE%-%TIME%
 
-docker-compose -f docker-compose.yml up -d  
 
-REM sleep 20, wait db init then set variable 
-ping 127.0.0.1 -n 60 > nul
-rem docker exec -it air_webserver_0 airflow variables -s sql_path "/usr/local/airflow/sql"
-rem docker exec -it air_webserver_0 airflow connections -a --conn_id  oracle_default --conn_type oracle --conn_host 172.17.0.3 --conn_login etladm --conn_password etladm --conn_schema etladm
+if "%1" == "1" (
+	echo "1, Start MultiNode"
+	docker-compose -f docker-compose-Celery.yml up -d  
+	rem docker exec -it air_webserver_1 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
+	ping 127.0.0.1 -n 40 > nul	
+	docker exec -it air_webserver_1  airflow pool -s file_pool 32 file
+	docker exec -it air_webserver_1  airflow pool -s sensor_pool 32 external_sensor	
+	goto END
+)   
 
-docker exec -it air_webserver_0 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
-rem docker cp client64/bin air_webserver_0:/usr/lib/oracle/11.2/client64/bin
+if "%1" == "2" (
+	echo "2, Start Tutorial"
+	rem docker run -d -p 8082:8080 --name=air_webserver_2 -e AIRFLOW__CORE__LOAD_EXAMPLES=True -e AIRFLOW__WEBSERVER__RBAC=False -v /home/airflow/dags:/usr/local/airflow/dags jessewei/sqlg-airflow:latest webserver
+	docker run -d -p 8082:8080 --name=air_webserver_2 -e AIRFLOW__WEBSERVER__RBAC=False -v /c/Proj/SQLG/sqlg-airflow/dags:/usr/local/airflow/dags jessewei/sqlg-airflow:latest webserver
 
-rem echo %DATE%-%TIME%
+	goto END
+)   
+
+if "%1" == "3" (
+	echo "3, Start Example"
+	docker run -d -p 8083:8080 --name=air_webserver_3 -e AIRFLOW__CORE__LOAD_EXAMPLES=True -e AIRFLOW__WEBSERVER__RBAC=False -v /home/airflow/dags:/usr/local/airflow/dags jessewei/sqlg-airflow:latest webserver
+
+	goto END
+)   
+
+if "%1" == "-h" (
+	goto HELP
+)   
+
+if "%1" == "0" (
+	goto DEFAULT
+) else (
+	if "%1" == "" (
+	goto DEFAULT
+	)
+)
+echo .
+echo Invalidate parameter:  %1
+goto HELP
+
+goto END
+
+
+:DEFAULT
+	echo "0, Start SingleNode"
+	docker-compose -f docker-compose.yml up -d  
+	REM sleep 20, wait db init then set variable 
+	ping 127.0.0.1 -n 40 > nul
+	docker exec -it air_webserver_0 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
+	docker exec -it air_webserver_0  airflow pool -s file_pool 32 file
+	docker exec -it air_webserver_0  airflow pool -s sensor_pool 32 external_sensor	
+goto END
+
+
+:HELP
+	echo .
+	echo "up.bat: The Airflow startup script, usage:"
+	echo "up.bat [0|1|2|3|-h]"
+	echo "0, Start SingleNode, port=8080"
+	echo "1, Start MultiNode, port=8081"  
+	echo "2, Start Tutorial, port=8082"
+	echo "3, Start Example, port=8083"
+	echo "-h, help message"
+	echo .
+
+:END	
+echo .
+echo Batch END: %DATE%-%TIME%
+echo .
 echo on 

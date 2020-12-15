@@ -11,1828 +11,1932 @@ import airflow
 from datetime import datetime, timedelta
 from airflow.operators.sensors import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.oracle_operator import OracleOperator
+from airflow.operators.bash_operator import BashOperator
+from airflow.contrib.sensors.file_sensor import FileSensor
+
 
 from airflow import models
 from airflow.models import Variable
 
-from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
 
-
+from acme.operators.sqlg_oracle import OracleOperatorWithTemplatedParams
+from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH'
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_HR_EMPMSF_H"
+MV_HR_EMPMSF_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_HR_EMPMSF_CN_H"
+MV_HR_EMPMSF_CN_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_HR_EMPMSF_VN_H"
+MV_HR_EMPMSF_VN_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "HR_DEPMSF_H"
+HR_DEPMSF_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "HR_DEPMSF_CN_H"
+HR_DEPMSF_CN_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "HR_DEPMSF_VN_H"
+HR_DEPMSF_VN_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "HISTORYCARD"
-HISTORYCARD = OracleOperator(
+HISTORYCARD = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "PN_SPC"
-PN_SPC = OracleOperator(
+PN_SPC = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SUB_SPC"
-SUB_SPC = OracleOperator(
+SUB_SPC = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "RWK_GLOBAL_LOT_WS1"
-RWK_GLOBAL_LOT_WS1 = OracleOperator(
+RWK_GLOBAL_LOT_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "RWK_GLOBAL_LOT_DETAIL_WS1"
-RWK_GLOBAL_LOT_DETAIL_WS1 = OracleOperator(
+RWK_GLOBAL_LOT_DETAIL_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "INSTRUMENT_CORRECT_NQJ"
-INSTRUMENT_CORRECT_NQJ = OracleOperator(
+INSTRUMENT_CORRECT_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "INSTRUMENT_INFO_CORRECT_NQJ"
-INSTRUMENT_INFO_CORRECT_NQJ = OracleOperator(
+INSTRUMENT_INFO_CORRECT_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_MTL_CROSS_REFERENCES_V"
-MV_MTL_CROSS_REFERENCES_V = OracleOperator(
+MV_MTL_CROSS_REFERENCES_V = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "XX_ERP_ITEM"
-XX_ERP_ITEM = OracleOperator(
+XX_ERP_ITEM = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERPIQC"
-ERPIQC = OracleOperator(
+ERPIQC = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERFORM_DOC_MSG_WS1"
-ERFORM_DOC_MSG_WS1 = OracleOperator(
+ERFORM_DOC_MSG_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "EF_QCEXCEPTION_MST_WS1"
-EF_QCEXCEPTION_MST_WS1 = OracleOperator(
+EF_QCEXCEPTION_MST_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "PN_MODULE"
-PN_MODULE = OracleOperator(
+PN_MODULE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "PN_MODULE_MAINTAIN"
-PN_MODULE_MAINTAIN = OracleOperator(
+PN_MODULE_MAINTAIN = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SPC_ABNORMAL"
-SPC_ABNORMAL = OracleOperator(
+SPC_ABNORMAL = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "COPQ_FCTACTUALCOST"
-COPQ_FCTACTUALCOST = OracleOperator(
+COPQ_FCTACTUALCOST = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MTL_MATERIAL_TRANSACTIONS"
-MTL_MATERIAL_TRANSACTIONS = OracleOperator(
+MTL_MATERIAL_TRANSACTIONS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "COPQ_DIMCATEGORY"
-COPQ_DIMCATEGORY = OracleOperator(
+COPQ_DIMCATEGORY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "BI_DIMMULTIORG"
-BI_DIMMULTIORG = OracleOperator(
+BI_DIMMULTIORG = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_ORG_ORGANIZATION_DEF"
-MV_ORG_ORGANIZATION_DEF = OracleOperator(
+MV_ORG_ORGANIZATION_DEF = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MV_ORG_ORGANIZATION_DEF"
+MV_ORG_ORGANIZATION_DEF = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERDRLRR_INSPECTION_HEADER_WS1"
-ERDRLRR_INSPECTION_HEADER_WS1 = OracleOperator(
+ERDRLRR_INSPECTION_HEADER_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_GL_SETS_OF_BOOKS"
-MV_GL_SETS_OF_BOOKS = OracleOperator(
+MV_GL_SETS_OF_BOOKS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_WSH_DELIVERABLES_V"
-MV_WSH_DELIVERABLES_V = OracleOperator(
+MV_WSH_DELIVERABLES_V = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "QKB_ITEM"
-QKB_ITEM = OracleOperator(
+QKB_ITEM = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERDRLRR_INSPECTION_STATUS_WS1"
-ERDRLRR_INSPECTION_STATUS_WS1 = OracleOperator(
+ERDRLRR_INSPECTION_STATUS_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERDRLRR_INSPECTION_DETAIL_WS1"
-ERDRLRR_INSPECTION_DETAIL_WS1 = OracleOperator(
+ERDRLRR_INSPECTION_DETAIL_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ERDRLRR_INSPECTION_RESULT_WS1"
-ERDRLRR_INSPECTION_RESULT_WS1 = OracleOperator(
+ERDRLRR_INSPECTION_RESULT_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "PLANT"
-PLANT = OracleOperator(
+PLANT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SAP_MATERIALMASTER"
-SAP_MATERIALMASTER = OracleOperator(
+SAP_MATERIALMASTER = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MATERIALGROUP"
-MATERIALGROUP = OracleOperator(
+MATERIALGROUP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "CONTROLTABLE"
-CONTROLTABLE = OracleOperator(
+CONTROLTABLE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "EMS_LOOKUPVALUE_NQJ"
-EMS_LOOKUPVALUE_NQJ = OracleOperator(
+EMS_LOOKUPVALUE_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
-my_taskid = "WO_NQJ"
-WO_NQJ = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
-my_taskid = "SPN_TABL_NQJ"
-SPN_TABL_NQJ = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "RESULTTYPE"
-RESULTTYPE = OracleOperator(
+RESULTTYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_PDE_EXCEPTION_HEADER_V_WS1"
-MV_PDE_EXCEPTION_HEADER_V_WS1 = OracleOperator(
+MV_PDE_EXCEPTION_HEADER_V_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_PDE_EXCEPTION_EQUIP_V_WS1"
-MV_PDE_EXCEPTION_EQUIP_V_WS1 = OracleOperator(
+MV_PDE_EXCEPTION_EQUIP_V_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_PDE_EXCEPTION_DETAIL_V_WS1"
-MV_PDE_EXCEPTION_DETAIL_V_WS1 = OracleOperator(
+MV_PDE_EXCEPTION_DETAIL_V_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "PDE_USER_WS1"
-PDE_USER_WS1 = OracleOperator(
+PDE_USER_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "QCE_REASON_CODE_WS1"
-QCE_REASON_CODE_WS1 = OracleOperator(
+QCE_REASON_CODE_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "EMS_MANUFACTURER_WS1"
-EMS_MANUFACTURER_WS1 = OracleOperator(
+EMS_MANUFACTURER_WS1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MODELTYPE"
-MODELTYPE = OracleOperator(
+MODELTYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "EFLOW_ATLO_SCAR_CN"
-EFLOW_ATLO_SCAR_CN = OracleOperator(
+EFLOW_ATLO_SCAR_CN = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ATLO_QUESTION_NQJ"
-ATLO_QUESTION_NQJ = OracleOperator(
+ATLO_QUESTION_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "EF_QCEXCEPTION_MST_NQJ"
-EF_QCEXCEPTION_MST_NQJ = OracleOperator(
+EF_QCEXCEPTION_MST_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "ATLO_SCAR_NQJ"
-ATLO_SCAR_NQJ = OracleOperator(
+ATLO_SCAR_NQJ = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "MV_XXCS_INCIDENTS_SFCS"
-MV_XXCS_INCIDENTS_SFCS = OracleOperator(
+MV_XXCS_INCIDENTS_SFCS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "CLOUD_WO_NQJ"
+CLOUD_WO_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MATERIALGROUP_NQJ"
+MATERIALGROUP_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "INSPECTIONLOT_NQJ"
+INSPECTIONLOT_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "MSD_CS_DATA"
+MSD_CS_DATA = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SAP_MATERIALMASTER_NQJ"
+SAP_MATERIALMASTER_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "ERPIQC_NQJ"
+ERPIQC_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_DEPARTMENT_H"
+SDM_DEPARTMENT_H = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_EMPLOYEE_H"
-SDM_EMPLOYEE_H = OracleOperator(
+SDM_EMPLOYEE_H = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MATERIAL_CATEGORY_QA"
-SDM_MATERIAL_CATEGORY_QA = OracleOperator(
+SDM_MATERIAL_CATEGORY_QA = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_PRODUCT_TYPE"
-SDM_PRODUCT_TYPE = OracleOperator(
+SDM_PRODUCT_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MODULE_TYPE"
-SDM_MODULE_TYPE = OracleOperator(
+SDM_MODULE_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_MODULE_TYPE"
+SDM_MODULE_TYPE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_PRODUCT_DEVELOPMENT_TYPE"
-SDM_PRODUCT_DEVELOPMENT_TYPE = OracleOperator(
+SDM_PRODUCT_DEVELOPMENT_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MATERIAL_DEFECT_MODE"
-SDM_MATERIAL_DEFECT_MODE = OracleOperator(
+SDM_MATERIAL_DEFECT_MODE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_ABNORMAL_DESCRIPTION"
+SDM_ABNORMAL_DESCRIPTION = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CATEGORY"
-SDM_CATEGORY = OracleOperator(
+SDM_CATEGORY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_QA_RESULT"
-SDM_QA_RESULT = OracleOperator(
+SDM_QA_RESULT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_C_FLOW_DEVELOPMENT_STAGE"
-SDM_C_FLOW_DEVELOPMENT_STAGE = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
-my_taskid = "SDM_C_FLOW_DEVELOPMENT_DERI"
-SDM_C_FLOW_DEVELOPMENT_DERI = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CONTROL_STATION"
-SDM_CONTROL_STATION = OracleOperator(
+SDM_CONTROL_STATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CONTROL_THE_PROJECT"
-SDM_CONTROL_THE_PROJECT = OracleOperator(
+SDM_CONTROL_THE_PROJECT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_TURN_AROUND_TIME"
-SDM_TURN_AROUND_TIME = OracleOperator(
+SDM_TURN_AROUND_TIME = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_RMA_CASE_STATUS"
-SDM_RMA_CASE_STATUS = OracleOperator(
+SDM_RMA_CASE_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_PERSON_IN_CHARGE"
-SDM_PERSON_IN_CHARGE = OracleOperator(
+SDM_PERSON_IN_CHARGE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CLOSED_DAY_8D"
-SDM_CLOSED_DAY_8D = OracleOperator(
+SDM_CLOSED_DAY_8D = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_TIER1"
-SDM_TIER1 = OracleOperator(
+SDM_TIER1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_SHIPPING_DATE"
-SDM_SHIPPING_DATE = OracleOperator(
+SDM_SHIPPING_DATE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_RETURN_SOURCE"
-SDM_RETURN_SOURCE = OracleOperator(
+SDM_RETURN_SOURCE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_SHIPPING_PERIOD"
+SDM_SHIPPING_PERIOD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_SHIPPING_PERIOD"
+SDM_SHIPPING_PERIOD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_WARRANTY_STATUS"
-SDM_WARRANTY_STATUS = OracleOperator(
+SDM_WARRANTY_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_WARRANTY_STATUS"
+SDM_WARRANTY_STATUS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_INVENTORY_OWNER"
-SDM_INVENTORY_OWNER = OracleOperator(
+SDM_INVENTORY_OWNER = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MANUFACTURER"
-SDM_MANUFACTURER = OracleOperator(
+SDM_MANUFACTURER = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CAVITY_NO"
-SDM_CAVITY_NO = OracleOperator(
+SDM_CAVITY_NO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CASE_CLOSE_STATUS"
-SDM_CASE_CLOSE_STATUS = OracleOperator(
+SDM_CASE_CLOSE_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_STATION"
-SDM_STATION = OracleOperator(
+SDM_STATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_MO_NO"
-SDM_MO_NO = OracleOperator(
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_C_FLOW_DEVELOPMENT_STAGE"
+SDM_C_FLOW_DEVELOPMENT_STAGE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_MO_START_MONTH"
-SDM_MO_START_MONTH = OracleOperator(
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_C_FLOW_DEVELOPMENT_DERI"
+SDM_C_FLOW_DEVELOPMENT_DERI = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_MO_PART_TYPE"
-SDM_MO_PART_TYPE = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
-my_taskid = "SDM_MP_APPROVE_DATE"
-SDM_MP_APPROVE_DATE = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
-my_taskid = "SDM_SR_NUMBER"
-SDM_SR_NUMBER = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_ATLO_FOR_MP"
-SDM_ATLO_FOR_MP = OracleOperator(
+SDM_ATLO_FOR_MP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MP_FLAG"
-SDM_MP_FLAG = OracleOperator(
+SDM_MP_FLAG = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_PM"
-SDM_PM = OracleOperator(
+SDM_PM = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_EPR_UPPER_LIMIT_OF_MOD"
+SDM_EPR_UPPER_LIMIT_OF_MOD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_MO_NO"
+SDM_MO_NO = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_MO_START_MONTH"
+SDM_MO_START_MONTH = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_MO_PART_TYPE"
+SDM_MO_PART_TYPE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_EPR_UPPER_LIMIT_OF_SIN"
+SDM_EPR_UPPER_LIMIT_OF_SIN = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_MP_APPROVE_DATE"
+SDM_MP_APPROVE_DATE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_SR_NUMBER"
+SDM_SR_NUMBER = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CSD_REASON_PAY"
-SDM_CSD_REASON_PAY = OracleOperator(
+SDM_CSD_REASON_PAY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CSD_MATERIAL_SCRAP_COS"
-SDM_CSD_MATERIAL_SCRAP_COS = OracleOperator(
+SDM_CSD_MATERIAL_SCRAP_COS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CSD_CUSTOMER_PAID_SERV"
-SDM_CSD_CUSTOMER_PAID_SERV = OracleOperator(
+SDM_CSD_CUSTOMER_PAID_SERV = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IQC_DAILY_INPUT_MANP_A"
-SDM_IQC_DAILY_INPUT_MANP_A = OracleOperator(
+SDM_IQC_DAILY_INPUT_MANP_A = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IQC_DAILY_INPUT_MANP"
-SDM_IQC_DAILY_INPUT_MANP = OracleOperator(
+SDM_IQC_DAILY_INPUT_MANP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IQC_DAILY_TOTAL_INSP"
-SDM_IQC_DAILY_TOTAL_INSP = OracleOperator(
+SDM_IQC_DAILY_TOTAL_INSP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IQC_AVERAGE_INSPECTION"
-SDM_IQC_AVERAGE_INSPECTION = OracleOperator(
+SDM_IQC_AVERAGE_INSPECTION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_INCOMING_MATERIAL_REJECT_LOTS"
-SDM_INCOMING_MATERIAL_REJECT_LOTS = OracleOperator(
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_INCOMING_MATERIAL_REJEC"
+SDM_INCOMING_MATERIAL_REJEC = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
-my_taskid = "SDM_SUPPLIER_MATERIAL_PRODUC"
-SDM_SUPPLIER_MATERIAL_PRODUC = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
-my_taskid = "SDM_CUSTOMER_INSPECTION"
-SDM_CUSTOMER_INSPECTION = OracleOperator(
-    task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
-
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CUSTOMER_COMPLAIN_CASES"
-SDM_CUSTOMER_COMPLAIN_CASES = OracleOperator(
+SDM_CUSTOMER_COMPLAIN_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IN_PROCESS_QUALITY_CONTROL"
-SDM_IN_PROCESS_QUALITY_CONTROL = OracleOperator(
+SDM_IN_PROCESS_QUALITY_CONTROL = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_QUALITY_ALERT_CASES"
-SDM_QUALITY_ALERT_CASES = OracleOperator(
+SDM_QUALITY_ALERT_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_EQUIPMENT_ANOMALY_CASE"
-SDM_EQUIPMENT_ANOMALY_CASE = OracleOperator(
+SDM_EQUIPMENT_ANOMALY_CASE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FIXTURE_ANOMALY_CASES"
-SDM_FIXTURE_ANOMALY_CASES = OracleOperator(
+SDM_FIXTURE_ANOMALY_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_FIXTURE_ANOMALY_CASES"
+SDM_FIXTURE_ANOMALY_CASES = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_EQUIPMENT_FIXTURE_ANOM"
-SDM_EQUIPMENT_FIXTURE_ANOM = OracleOperator(
+SDM_EQUIPMENT_FIXTURE_ANOM = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FAULT_INJECTION_DR"
-SDM_FAULT_INJECTION_DR = OracleOperator(
+SDM_FAULT_INJECTION_DR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_Q_SCAN_DEFECT_RATE_DR"
-SDM_Q_SCAN_DEFECT_RATE_DR = OracleOperator(
+SDM_Q_SCAN_DEFECT_RATE_DR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FINAL_QUALITY_INSPECTI"
-SDM_FINAL_QUALITY_INSPECTI = OracleOperator(
+SDM_FINAL_QUALITY_INSPECTI = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FQC_LRR"
-SDM_FQC_LRR = OracleOperator(
+SDM_FQC_LRR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_QUALITY_HOLD_CASES"
-SDM_QUALITY_HOLD_CASES = OracleOperator(
+SDM_QUALITY_HOLD_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CLOSE_WITHIN_SIPULATED"
-SDM_CLOSE_WITHIN_SIPULATED = OracleOperator(
+SDM_CLOSE_WITHIN_SIPULATED = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CUSTOMER_COMPLAIN_FOR"
-SDM_CUSTOMER_COMPLAIN_FOR = OracleOperator(
+SDM_CUSTOMER_COMPLAIN_FOR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_ON_TIME_CLOSE_RATIO_FOR_WN"
-SDM_ON_TIME_CLOSE_RATIO_FOR_WN = OracleOperator(
+SDM_ON_TIME_CLOSE_RATIO_FOR_WN = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CLOSE_WITHIN_14_DAYS_FO"
-SDM_CLOSE_WITHIN_14_DAYS_FO = OracleOperator(
+SDM_CLOSE_WITHIN_14_DAYS_FO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CUSTOMER_COMPLAIN_FOR_S"
-SDM_CUSTOMER_COMPLAIN_FOR_S = OracleOperator(
+SDM_CUSTOMER_COMPLAIN_FOR_S = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CLOSE_WITHIN_14_DAYS_RATIO"
-SDM_CLOSE_WITHIN_14_DAYS_RATIO = OracleOperator(
+SDM_CLOSE_WITHIN_14_DAYS_RATIO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FIELD_DEFECT_QUANTITY"
-SDM_FIELD_DEFECT_QUANTITY = OracleOperator(
+SDM_FIELD_DEFECT_QUANTITY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_FIELD_DEFECT_QUANTITY"
+SDM_FIELD_DEFECT_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_SHIPPING_QUANTITY"
+SDM_SHIPPING_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_SHIPPING_QUANTITY"
+SDM_SHIPPING_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_AUTOMOTIVE_PRODUCT_FIELD_D"
+SDM_AUTOMOTIVE_PRODUCT_FIELD_D = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_ON_SITE_REWORK_QUANTITY"
-SDM_ON_SITE_REWORK_QUANTITY = OracleOperator(
+SDM_ON_SITE_REWORK_QUANTITY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_IN_WARRANTY_RETURN_QUANTITY"
-SDM_IN_WARRANTY_RETURN_QUANTITY = OracleOperator(
+SDM_IN_WARRANTY_RETURN_QUANTITY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_QUALITY_REJECT_QUANTITY"
-SDM_QUALITY_REJECT_QUANTITY = OracleOperator(
+SDM_QUALITY_REJECT_QUANTITY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "SDM_QUALITY_REJECT_QUANTITY"
+SDM_QUALITY_REJECT_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_MODELS_WITH_MO_RECORDS"
-SDM_MODELS_WITH_MO_RECORDS = OracleOperator(
+SDM_MODELS_WITH_MO_RECORDS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CSD_PLANNED_SHIPPING"
-SDM_CSD_PLANNED_SHIPPING = OracleOperator(
+SDM_CSD_PLANNED_SHIPPING = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_ACTUAL_CALIBRATION"
-SDM_ACTUAL_CALIBRATION = OracleOperator(
+SDM_ACTUAL_CALIBRATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_PLANNED_CALIBRATION"
-SDM_PLANNED_CALIBRATION = OracleOperator(
+SDM_PLANNED_CALIBRATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_CALIBRATION_COMPLETED_RATE"
-SDM_CALIBRATION_COMPLETED_RATE = OracleOperator(
+SDM_CALIBRATION_COMPLETED_RATE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_TICKET_TYPE"
-SDM_TICKET_TYPE = OracleOperator(
+SDM_TICKET_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "SDM_FINAL_QUALITY_INSPECT"
-SDM_FINAL_QUALITY_INSPECT = OracleOperator(
+SDM_FINAL_QUALITY_INSPECT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MATERIAL_CATEGORY_QA"
-DIM_MATERIAL_CATEGORY_QA = OracleOperator(
+DIM_MATERIAL_CATEGORY_QA = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_PRODUCT_TYPE"
-DIM_PRODUCT_TYPE = OracleOperator(
+DIM_PRODUCT_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MODULE_TYPE"
-DIM_MODULE_TYPE = OracleOperator(
+DIM_MODULE_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_PRODUCT_DEVELOPMENT_TYPE"
-DIM_PRODUCT_DEVELOPMENT_TYPE = OracleOperator(
+DIM_PRODUCT_DEVELOPMENT_TYPE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MATERIAL_DEFECT_MODE"
-DIM_MATERIAL_DEFECT_MODE = OracleOperator(
+DIM_MATERIAL_DEFECT_MODE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_ABNORMAL_DESCRIPTION"
+DIM_ABNORMAL_DESCRIPTION = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CATEGORY"
-DIM_CATEGORY = OracleOperator(
+DIM_CATEGORY = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_QA_RESULT"
-DIM_QA_RESULT = OracleOperator(
+DIM_QA_RESULT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CONTROL_STATION"
-DIM_CONTROL_STATION = OracleOperator(
+DIM_CONTROL_STATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CONTROL_THE_PROJECT"
-DIM_CONTROL_THE_PROJECT = OracleOperator(
+DIM_CONTROL_THE_PROJECT = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_TURN_AROUND_TIME"
-DIM_TURN_AROUND_TIME = OracleOperator(
+DIM_TURN_AROUND_TIME = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_RMA_CASE_STATUS"
-DIM_RMA_CASE_STATUS = OracleOperator(
+DIM_RMA_CASE_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_PERSON_IN_CHARGE"
-DIM_PERSON_IN_CHARGE = OracleOperator(
+DIM_PERSON_IN_CHARGE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CLOSED_DAY_8D"
-DIM_CLOSED_DAY_8D = OracleOperator(
+DIM_CLOSED_DAY_8D = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_TIER1"
-DIM_TIER1 = OracleOperator(
+DIM_TIER1 = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_SHIPPING_DATE"
-DIM_SHIPPING_DATE = OracleOperator(
+DIM_SHIPPING_DATE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_RETURN_SOURCE"
-DIM_RETURN_SOURCE = OracleOperator(
+DIM_RETURN_SOURCE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_SHIPPING_PERIOD"
+DIM_SHIPPING_PERIOD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_WARRANTY_STATUS"
-DIM_WARRANTY_STATUS = OracleOperator(
+DIM_WARRANTY_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_INVENTORY_OWNER"
-DIM_INVENTORY_OWNER = OracleOperator(
+DIM_INVENTORY_OWNER = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_MANUFACTURER"
+DIM_MANUFACTURER = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CAVITY_NO"
-DIM_CAVITY_NO = OracleOperator(
+DIM_CAVITY_NO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_CASE_CLOSE_STATUS"
-DIM_CASE_CLOSE_STATUS = OracleOperator(
+DIM_CASE_CLOSE_STATUS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_STATION"
-DIM_STATION = OracleOperator(
+DIM_STATION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_C_FLOW_DEVELOPMENT_STAGE"
-DIM_C_FLOW_DEVELOPMENT_STAGE = OracleOperator(
+DIM_C_FLOW_DEVELOPMENT_STAGE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_C_FLOW_DEVELOPMENT_DERI"
-DIM_C_FLOW_DEVELOPMENT_DERI = OracleOperator(
+DIM_C_FLOW_DEVELOPMENT_DERI = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_ATLO_FOR_MP"
-DIM_ATLO_FOR_MP = OracleOperator(
+DIM_ATLO_FOR_MP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MP_FLAG"
-DIM_MP_FLAG = OracleOperator(
+DIM_MP_FLAG = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_PM"
-DIM_PM = OracleOperator(
+DIM_PM = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_EPR_UPPER_LIMIT_OF_MOD"
+DIM_EPR_UPPER_LIMIT_OF_MOD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MO_NO"
-DIM_MO_NO = OracleOperator(
+DIM_MO_NO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MO_START_MONTH"
-DIM_MO_START_MONTH = OracleOperator(
+DIM_MO_START_MONTH = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_MO_PART_TYPE"
+DIM_MO_PART_TYPE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "DIM_EPR_UPPER_LIMIT_OF_SIN"
+DIM_EPR_UPPER_LIMIT_OF_SIN = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_MP_APPROVE_DATE"
-DIM_MP_APPROVE_DATE = OracleOperator(
+DIM_MP_APPROVE_DATE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "DIM_SR_NUMBER"
-DIM_SR_NUMBER = OracleOperator(
+DIM_SR_NUMBER = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CSD_MATERIAL_SCRAP_COS"
-FCT_CSD_MATERIAL_SCRAP_COS = OracleOperator(
+FCT_CSD_MATERIAL_SCRAP_COS = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CSD_CUSTOMER_PAID_SERV"
-FCT_CSD_CUSTOMER_PAID_SERV = OracleOperator(
+FCT_CSD_CUSTOMER_PAID_SERV = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_IQC_DAILY_INPUT_MANP"
-FCT_IQC_DAILY_INPUT_MANP = OracleOperator(
+FCT_IQC_DAILY_INPUT_MANP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_IQC_DAILY_TOTAL_INSP"
-FCT_IQC_DAILY_TOTAL_INSP = OracleOperator(
+FCT_IQC_DAILY_TOTAL_INSP = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_IQC_AVERAGE_INSPECTION"
-FCT_IQC_AVERAGE_INSPECTION = OracleOperator(
+FCT_IQC_AVERAGE_INSPECTION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_SUPPLIER_MATERIAL_PRODUC"
-FCT_SUPPLIER_MATERIAL_PRODUC = OracleOperator(
+FCT_SUPPLIER_MATERIAL_PRODUC = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CUSTOMER_INSPECTION"
-FCT_CUSTOMER_INSPECTION = OracleOperator(
+FCT_CUSTOMER_INSPECTION = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CUSTOMER_COMPLAIN_CASES"
-FCT_CUSTOMER_COMPLAIN_CASES = OracleOperator(
+FCT_CUSTOMER_COMPLAIN_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_FAULT_INJECTION_DR"
-FCT_FAULT_INJECTION_DR = OracleOperator(
+FCT_FAULT_INJECTION_DR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_Q_SCAN_DEFECT_RATE_DR"
-FCT_Q_SCAN_DEFECT_RATE_DR = OracleOperator(
+FCT_Q_SCAN_DEFECT_RATE_DR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_QUALITY_HOLD_CASES"
-FCT_QUALITY_HOLD_CASES = OracleOperator(
+FCT_QUALITY_HOLD_CASES = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CLOSE_WITHIN_SIPULATED"
-FCT_CLOSE_WITHIN_SIPULATED = OracleOperator(
+FCT_CLOSE_WITHIN_SIPULATED = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CUSTOMER_COMPLAIN_FOR"
-FCT_CUSTOMER_COMPLAIN_FOR = OracleOperator(
+FCT_CUSTOMER_COMPLAIN_FOR = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_ON_TIME_CLOSE_RATIO_FOR_WN"
-FCT_ON_TIME_CLOSE_RATIO_FOR_WN = OracleOperator(
+FCT_ON_TIME_CLOSE_RATIO_FOR_WN = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CLOSE_WITHIN_14_DAYS_FO"
-FCT_CLOSE_WITHIN_14_DAYS_FO = OracleOperator(
+FCT_CLOSE_WITHIN_14_DAYS_FO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CUSTOMER_COMPLAIN_FOR_S"
-FCT_CUSTOMER_COMPLAIN_FOR_S = OracleOperator(
+FCT_CUSTOMER_COMPLAIN_FOR_S = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
-
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_CLOSE_WITHIN_14_DAYS_RATIO"
-FCT_CLOSE_WITHIN_14_DAYS_RATIO = OracleOperator(
+FCT_CLOSE_WITHIN_14_DAYS_RATIO = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
-    postgres_conn_id='postgres_dwh',
-#    sql=DB_NAME + '/' + my_taskid + '/' + my_taskid + '.sql',
-    sql=my_taskid + '/' + my_taskid + '.sql',
-    parameters={"window_start_date": "{{ ds }}", "window_end_date": "{{ tomorrow_ds }}"},
-    start_date=airflow.utils.dates.days_ago(1),
-    pool='postgres_dwh')
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "FCT_FIELD_DEFECT_QUANTITY"
+FCT_FIELD_DEFECT_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
+# JOB_TYPE=ODS-MAIN
+my_taskid = "FCT_SHIPPING_QUANTITY"
+FCT_SHIPPING_QUANTITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
+my_taskid = "FCT_AUTOMOTIVE_PRODUCT_FIELD_D"
+FCT_AUTOMOTIVE_PRODUCT_FIELD_D = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
