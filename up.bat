@@ -5,9 +5,10 @@ echo Batch start: %DATE%-%TIME%
 
 if "%1" == "1" (
 	echo "1, Start MultiNode"
-	docker-compose -f docker-compose-Celery.yml up -d  
-	rem docker exec -it air_webserver_1 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
+	rem WIP: docker-compose -f docker-compose-Celery.yml up -d  scale worker=5
+	docker-compose -f docker-compose-Celery.yml up -d
 	ping 127.0.0.1 -n 40 > nul	
+	docker exec -it air_webserver_1 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
 	docker exec -it air_webserver_1  airflow pool -s file_pool 32 file
 	docker exec -it air_webserver_1  airflow pool -s sensor_pool 32 external_sensor	
 	goto END
@@ -17,7 +18,6 @@ if "%1" == "2" (
 	echo "2, Start Tutorial"
 	rem docker run -d -p 8082:8080 --name=air_webserver_2 -e AIRFLOW__CORE__LOAD_EXAMPLES=True -e AIRFLOW__WEBSERVER__RBAC=False -v /home/airflow/dags:/usr/local/airflow/dags jessewei/sqlg-airflow:latest webserver
 	docker run -d -p 8082:8080 --name=air_webserver_2 -e AIRFLOW__WEBSERVER__RBAC=False -v /c/Proj/SQLG/sqlg-airflow/dags:/usr/local/airflow/dags jessewei/sqlg-airflow:latest webserver
-
 	goto END
 )   
 

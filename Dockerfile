@@ -19,7 +19,7 @@ ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
 ENV AIRFLOW_HOME=${AIRFLOW_USER_HOME}
 
-# Oracle
+# Oracle ENV
 ENV LD_LIBRARY_PATH=/usr/lib/oracle/11.2/client64/lib/
 ENV ORACLE_HOME=/usr/lib/oracle/11.2/client64
 ENV PATH="$ORACLE_HOME/bin:${PATH}"
@@ -66,15 +66,10 @@ RUN set -ex \
     && pip install pyOpenSSL \
     && pip install ndg-httpsclient \
     && pip install pyasn1 \
-
     && pip install cx_Oracle \	
-    && pip install apache-airflow[crypto,celery,postgres,hive,jdbc,mysql,ssh${AIRFLOW_DEPS:+,}${AIRFLOW_DEPS}]==${AIRFLOW_VERSION} \
+    && pip install apache-airflow[crypto,celery,postgres,hive,jdbc,mysql,oracle,redis,ssh${AIRFLOW_DEPS:+,}${AIRFLOW_DEPS}]==${AIRFLOW_VERSION} \
 		--constraint "https://raw.githubusercontent.com/apache/airflow/constraints-1.10.12/constraints-3.7.txt" \
-#	test for multinode
-#	&& pip install pandas==0.18.1 \
-	&& pip install celery==3.1.23 \
-# 	
-    && pip install 'redis==3.2' \
+    && pip install 'cryptography>=3.2' \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
     && apt-get autoremove -yqq --purge \
@@ -88,8 +83,9 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
-RUN  mkdir ${AIRFLOW_USER_HOME}/etl_base
 # For etl cp file permission
+RUN  mkdir ${AIRFLOW_USER_HOME}/etl_base
+
 RUN  find ${AIRFLOW_USER_HOME}/etl_base -type d -exec chmod +w {} +
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
