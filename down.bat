@@ -15,14 +15,14 @@ if "%1" == "1" (
 
 if "%1" == "2" (
 	echo "2, Stop Tutorial"
-	docker -f rm air_webserver_2
+	docker rm -f air_webserver_2
 
 	goto END
 )   
 
 if "%1" == "3" (
 	echo "3, Stop Example"
-	docker -f rm air_webserver_2
+	docker rm  -f air_webserver_2
 
 	goto END
 )   
