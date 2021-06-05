@@ -28,6 +28,7 @@ services:
                 max-size: 10m
                 max-file: "3"            
         volumes:
+          - ./config/airflow.cfg:/usr/local/airflow/airflow.cfg        
           - ./config/var.json:/usr/local/airflow/var.json          
           - ./config/conn.json:/usr/local/airflow/conn.json          
           - ./etl_home/etl_base:/usr/local/airflow/etl_base
