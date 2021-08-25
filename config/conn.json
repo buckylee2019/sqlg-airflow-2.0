@@ -1,11 +1,11 @@
 {
-    "oracle_default": {
-        "conn_type": "oracle",
-        "host": "172.17.0.1",
-        "schema": "ods",
-        "login": "system",
-        "password": "oracle",
-        "port": "1521"
+    "mssql_default": {
+        "conn_type": "Microsoft SQL Server",
+        "host": "10.6.5.78",
+        "schema": "ODPDEV",
+        "login": "sa",
+        "password": "passw0rd",
+        "port": "1433"
     },
     "oracle_dev": {
         "conn_type": "oracle",

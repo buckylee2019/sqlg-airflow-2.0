@@ -5,8 +5,8 @@
     "DIR_TEMP": "/usr/local/airflow/etl_base/DATA/",
     "DIR_MSG": "/usr/local/airflow/etl_base/MSG/",
     "DIR_BIN": "/usr/local/airflow/etl_base/bin/",
-    "ETLUSER": "etladm",
-    "ETLPWD": "etladm",
+    "ETLUSER": "sa",
+    "ETLPWD": "passw0rd",
     "DW_HOST": "172.17.0.1",
 	"EDC": "20200101"
 }

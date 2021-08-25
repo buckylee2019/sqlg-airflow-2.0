@@ -54,6 +54,7 @@ goto END
 	docker exec -it air_webserver_0 airflow create_user -r Admin -e jessewei@tw.ibm.com -f jesse -l wei -u airflow -p airflow
 	docker exec -it air_webserver_0  airflow pool -s file_pool 32 file
 	docker exec -it air_webserver_0  airflow pool -s sensor_pool 32 external_sensor	
+	docker exec -it air_webserver_0  airflow pool -s sql_pool 32 sql	
 goto END
 
 
