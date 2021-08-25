@@ -9,7 +9,7 @@
 This repository contains **Dockerfile** of [apache-airflow](https://github.com/apache/incubator-airflow) for [Docker](https://www.docker.com/)'s [automated build](https://registry.hub.docker.com/u/jessewei/sqlg-airflow/) published to the public [Docker Hub Registry](https://registry.hub.docker.com/).
 
 Updated: add oracle client and cx_Oracle
-
+Updated: add mssql, pyodbc
 
 
 ## Informations
