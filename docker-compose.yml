@@ -1,7 +1,8 @@
-version: '3'
+version: '2'
 services:
     postgres:
         image: postgres:9.6
+        container_name: air_postgres_0        
         environment:
           - POSTGRES_USER=airflow
           - POSTGRES_PASSWORD=airflow
@@ -28,19 +29,21 @@ services:
                 max-size: 10m
                 max-file: "3"            
         volumes:
-          - ./config/airflow.cfg:/usr/local/airflow/airflow.cfg        
+          - ./config/airflow.cfg:/usr/local/airflow/airflow.cfg                
           - ./config/var.json:/usr/local/airflow/var.json          
           - ./config/conn.json:/usr/local/airflow/conn.json          
-          - ./etl_home/etl_base:/usr/local/airflow/etl_base
-          - ./etl_home/etl_base/dags:/usr/local/airflow/dags
-          - ./etl_home/etl_base/sql:/usr/local/airflow/sql
-          - ./etl_home/bin:/usr/local/airflow/bin
-          - ./etl_home/logs:/usr/local/airflow/logs
-          - ./etl_home/etl_base/requirements.txt:/requirements.txt
+          #- ./config/tnsnames.ora:/usr/lib/oracle/11.2/client64/network/admin/tnsnames.ora          
+          - ./etl_base:/usr/local/airflow/etl_base
+          - ./etl_base/dags:/usr/local/airflow/dags
+          - ./etl_base/sql:/usr/local/airflow/sql
+          - /home/FTP:/usr/local/airflow/etl_base/SOURCE
+          - ./bin:/usr/local/airflow/bin
+          - ./logs:/usr/local/airflow/logs
+          - ./etl_base/requirements.txt:/requirements.txt
         ports:
           - 8080:8080
         command: webserver
-        #command: airflow variables -s sql_path "/usr/local/airflow/sql"
+        #command: airflow variables -s sql_path " /usr/local/airflow/sql"
                          
                         
                       
