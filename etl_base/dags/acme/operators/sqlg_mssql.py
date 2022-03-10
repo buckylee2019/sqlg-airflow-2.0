@@ -43,7 +43,7 @@ class MsSqlOperatorWithTemplatedParams(BaseOperator):
         self.mssql_conn_id = mssql_conn_id
         self.sql = sql
         self.parameters = parameters
-        self.autocommit = autocommit
+        self.auto_commit = autocommit
         self.database = database
 
     def execute(self, context):

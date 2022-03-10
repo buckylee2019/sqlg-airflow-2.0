@@ -9,10 +9,10 @@
     },
     "oracle_dev": {
         "conn_type": "oracle",
-        "host": "172.17.0.3",
+        "host": "172.24.0.9",
         "schema": "etladm",
         "login": "etladm",
         "password": "etladm",
-        "port": "1521"
+        "port": "9876"
     }	
 }

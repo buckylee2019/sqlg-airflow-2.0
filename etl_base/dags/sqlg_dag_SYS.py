@@ -10,7 +10,7 @@ import logging
 import airflow
 import pendulum
 from datetime import datetime, timedelta
-from airflow.operators.sensors import ExternalTaskSensor
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable
@@ -20,7 +20,7 @@ from airflow.models import Variable
 
 #from acme.operators.dwh_operators import PostgresOperatorWithTemplatedParams
 ExternalTaskSensor.ui_color = 'white'
-proj_start_date = pendulum.datetime(2021, 1, 1,  tzinfo="Asia/Taipei")
+proj_start_date = pendulum.datetime(2021, 1, 1,  tz="Asia/Taipei")
 
 
 
@@ -30,9 +30,10 @@ def f_SYS_STS_STG():
 
 def set_exec_date(ds, **kwargs):
     f_SYS_STS_STG()
-    kwargs['ti'].xcom_push(key='sqlg_execution_date', value=kwargs['execution_date'])
-    Variable.set('sqlg_execution_date', kwargs['execution_date'])
-    Variable.set('END_DT', kwargs['execution_date'])
+    logging.info('Control flow: STAGE status '+kwargs['execution_date'].strftime("%Y%m%d"))
+    kwargs['ti'].xcom_push(key='sqlg_execution_date', value=kwargs['execution_date'].strftime("%Y%m%d"))
+    Variable.set('sqlg_execution_date', kwargs['execution_date'].strftime("%Y%m%d"))
+    Variable.set('END_DT', kwargs['execution_date'].strftime("%Y%m%d"))
     return
 
 args = {
@@ -50,11 +51,11 @@ D_STG_INIT = airflow.DAG(
     schedule_interval="0 5 * * *",    
     default_args=args,
     template_searchpath=tmpl_search_path,        
-    max_active_runs=1)
+    max_active_runs=1,
+    catchup = False)
 
 my_taskid = 'SYS_STS_STG'
 SYS_STS_STG = PythonOperator(task_id=my_taskid,
-    schedule_interval=None,
     python_callable=set_exec_date,
     provide_context=True,
     dag=D_STG_INIT

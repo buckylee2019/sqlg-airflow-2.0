@@ -10,7 +10,7 @@ import logging
 import re
 import airflow
 from datetime import datetime, timedelta
-from airflow.operators.sensors import ExternalTaskSensor
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
 from airflow import models
 from airflow.models import Variable

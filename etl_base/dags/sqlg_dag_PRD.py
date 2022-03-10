@@ -8,26 +8,61 @@
 # from __future__ import print_function
 import logging
 import re
+import pendulum
 import airflow
 from datetime import datetime, timedelta
-from airflow.operators.sensors import ExternalTaskSensor
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python_operator import BranchPythonOperator
 from airflow.contrib.sensors.file_sensor import FileSensor
+from airflow.operators.dummy_operator import DummyOperator
+from airflow.models import Variable, DagModel, DagBag
 from airflow import models
-from airflow.models import Variable
+
 
 from acme.operators.sqlg_oracle import OracleOperatorWithTemplatedParams
 from airflow.operators.oracle_operator import OracleOperator
 # DB_NAME = 'DWH' # for future xDB operator
 
+proj_start_date = pendulum.datetime(2021, 1, 1,  tz="Etc/GMT-8")
 tmpl_search_path = Variable.get("sql_path")
+data_stage_imp_ptn = '_ODS_'
+data_stage = []
+std_interval = {
+    '@once' 		:1,
+    '@hourly' 		:2,
+    '0 5 * * *'		:3,
+    '0 5 * * 0'		:4,
+    '0 5 1 * *'		:5,
+    '0 5 1 */3 *'	:6,
+    '0 5 1 1 *'		:7,
+}
+
+# function to sync execution for diff frequency
+def sqlg_exec_date_fn(dt, context):
+    var_date = Variable.get("sqlg_execution_date")
+    ti = context['ti']
+    dag = context['dag']
+    ti_exec_date = context['execution_date'] 
+    schedule_interval = dag.schedule_interval
+    
+    # if wait INIT and standard freq then set as default {{ ds }} # set in planner
+    # else use dag own execution date
+    if ti.task.external_dag_id == 'D_STG_INIT' and schedule_interval[0] == '@':
+        exec_date = pendulum.parse(var_date)
+    else:        
+        exec_date = ti_exec_date
+
+    print("sqlg_exec_date_fn::DEBUG:external_dag_id, exec_date:", ti.task.external_dag_id, exec_date)
+    return exec_date
+	
 
 
 
 args = {
-    "owner": "JESSEWEI",
-    'start_date': airflow.utils.dates.days_ago(1),
+    "owner": "DG_IBM2",
+    'start_date': proj_start_date,
     'provide_context': True
 }	
 # XSLT:loop: declaration: END}
@@ -45,13 +80,16 @@ else:
 D_ODS_PRD_SRC = airflow.DAG(
     "D_ODS_PRD_SRC",
     tags=["PRD", data_stage[0]],
-    schedule_interval="RCG-D-NAT",
+    schedule_interval="@daily",
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
-    max_active_runs=1
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
 	)
+	
+	
 job_flow_name = "D_SDM_PRD"
 if job_flow_name == 'I_SDM_CMN':
     data_stage = ['ODS']
@@ -64,9 +102,12 @@ D_SDM_PRD = airflow.DAG(
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
-    max_active_runs=1
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
 	)
+	
+	
 job_flow_name = "D_DM_PRD"
 if job_flow_name == 'I_SDM_CMN':
     data_stage = ['ODS']
@@ -79,13 +120,192 @@ D_DM_PRD = airflow.DAG(
     dagrun_timeout=timedelta(minutes=60),
     template_searchpath=tmpl_search_path,
     default_args=args,
-    start_date=airflow.utils.dates.days_ago(1),    
-    max_active_runs=1
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
 	)
-
-# XSLT:loop: JOB_FLOW_NAME: END}
-
-
+	
+	
+job_flow_name = "D_ODS_CUS"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_CUS")
+D_ODS_CUS = airflow.DAG(
+    "D_ODS_CUS",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_GBD"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_GBD")
+D_ODS_GBD = airflow.DAG(
+    "D_ODS_GBD",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_HRM"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_HRM")
+D_ODS_HRM = airflow.DAG(
+    "D_ODS_HRM",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_MFG"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_MFG")
+D_ODS_MFG = airflow.DAG(
+    "D_ODS_MFG",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_PRD"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_PRD")
+D_ODS_PRD = airflow.DAG(
+    "D_ODS_PRD",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_QAM"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_QAM")
+D_ODS_QAM = airflow.DAG(
+    "D_ODS_QAM",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "D_ODS_SCM"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","D_ODS_SCM")
+D_ODS_SCM = airflow.DAG(
+    "D_ODS_SCM",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "W_ODS_QAM"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","W_ODS_QAM")
+W_ODS_QAM = airflow.DAG(
+    "W_ODS_QAM",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@weekly",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "M_ODS_CUS"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","M_ODS_CUS")
+M_ODS_CUS = airflow.DAG(
+    "M_ODS_CUS",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@monthly",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
+job_flow_name = "Y_ODS_CUS"
+if job_flow_name == 'I_SDM_CMN':
+    data_stage = ['ODS']
+else:
+    data_stage = re.findall(r"_(.*?)_","Y_ODS_CUS")
+Y_ODS_CUS = airflow.DAG(
+    "Y_ODS_CUS",
+    tags=["PRD", data_stage[0]],
+    schedule_interval="@daily",
+    dagrun_timeout=timedelta(minutes=60),
+    template_searchpath=tmpl_search_path,
+    default_args=args,
+    # start_date=airflow.utils.dates.days_ago(1),    
+    max_active_runs=1,
+	catchup=False
+	)
+	
+	
 
 # JOB_TYPE=ODS-MAIN
 my_taskid = "MTL_SYSTEM_ITEMS_B"
@@ -671,6 +891,17 @@ FCT_DMST_AND_INTL_TRAVEL_EXP = OracleOperatorWithTemplatedParams(
     )
 
 # JOB_TYPE=ODS-MAIN
+my_taskid = "FCT_RD_LABOR_HOURS_EXPENSE"
+FCT_RD_LABOR_HOURS_EXPENSE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_DM_PRD,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=ODS-MAIN
 my_taskid = "FCT_TESTING_EXPENSE"
 FCT_TESTING_EXPENSE = OracleOperatorWithTemplatedParams(
     task_id=my_taskid,
@@ -725,6 +956,2780 @@ DIM_PROJECT_CODE = OracleOperatorWithTemplatedParams(
         "); End;"
     )
 
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Tier1_OEM_Mapping_Table_WH"
+ODS_UC_Tier1_OEM_Mapping_Table_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Tier1_OEM_Mapping_Table_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Tier1_OEM_Mapping_Table_STG"
+UC_Tier1_OEM_Mapping_Table_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Tier1_OEM_Mapping_Table"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Tier1_OEM_Mapping_Table_LD"
+ODS_UC_Tier1_OEM_Mapping_Table_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Tier1_OEM_Mapping_Table"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Tier1_OEM_Mapping_Table"
+UC_Tier1_OEM_Mapping_Table = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Customer_Model_Name_WH"
+ODS_UC_Customer_Model_Name_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Customer_Model_Name_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Customer_Model_Name_STG"
+UC_Customer_Model_Name_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Customer_Model_Name"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Customer_Model_Name_LD"
+ODS_UC_Customer_Model_Name_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Customer_Model_Name"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Customer_Model_Name"
+UC_Customer_Model_Name = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Pre_Project_information_WH"
+ODS_UC_Pre_Project_information_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Pre_Project_information_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Pre_Project_information_STG"
+UC_Pre_Project_information_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Pre_Project_information"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Pre_Project_information_LD"
+ODS_UC_Pre_Project_information_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Pre_Project_information"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Pre_Project_information"
+UC_Pre_Project_information = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Premium_Freight_WH"
+ODS_UC_Premium_Freight_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Premium_Freight_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Premium_Freight_STG"
+UC_Premium_Freight_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Premium_Freight"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Premium_Freight_LD"
+ODS_UC_Premium_Freight_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Premium_Freight"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Premium_Freight"
+UC_Premium_Freight = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_RFQ_Freight_Estimate_MAP_WH"
+ODS_UC_RFQ_Freight_Estimate_MAP_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_RFQ_Freight_Estimate_MAP_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_RFQ_Freight_Estimate_MAP_STG"
+UC_RFQ_Freight_Estimate_MAP_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_RFQ_Freight_Estimate_MAP"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_RFQ_Freight_Estimate_MAP_LD"
+ODS_UC_RFQ_Freight_Estimate_MAP_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_RFQ_Freight_Estimate_MAP"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_RFQ_Freight_Estimate_MAP"
+UC_RFQ_Freight_Estimate_MAP = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_RFQ_Critical_Parts_MAP_WH"
+ODS_UC_RFQ_Critical_Parts_MAP_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_RFQ_Critical_Parts_MAP_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_RFQ_Critical_Parts_MAP_STG"
+UC_RFQ_Critical_Parts_MAP_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_RFQ_Critical_Parts_MAP"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_RFQ_Critical_Parts_MAP_LD"
+ODS_UC_RFQ_Critical_Parts_MAP_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_RFQ_Critical_Parts_MAP"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_RFQ_Critical_Parts_MAP"
+UC_RFQ_Critical_Parts_MAP = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_RFQ_Key_parts_MAP_WH"
+ODS_UC_RFQ_Key_parts_MAP_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_RFQ_Key_parts_MAP_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_RFQ_Key_parts_MAP_STG"
+UC_RFQ_Key_parts_MAP_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_RFQ_Key_parts_MAP"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_RFQ_Key_parts_MAP_LD"
+ODS_UC_RFQ_Key_parts_MAP_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_RFQ_Key_parts_MAP"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_RFQ_Key_parts_MAP"
+UC_RFQ_Key_parts_MAP = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Company_and_Background_Check_WH"
+ODS_UC_Company_and_Background_Check_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Company_and_Background_Check_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Company_and_Background_Check_STG"
+UC_Company_and_Background_Check_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Company_and_Background_Check"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Company_and_Background_Check_LD"
+ODS_UC_Company_and_Background_Check_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Company_and_Background_Check"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Company_and_Background_Check"
+UC_Company_and_Background_Check = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Customer_PO_Management_WH"
+ODS_UC_Customer_PO_Management_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Customer_PO_Management_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Customer_PO_Management_STG"
+UC_Customer_PO_Management_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Customer_PO_Management"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Customer_PO_Management_LD"
+ODS_UC_Customer_PO_Management_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Customer_PO_Management"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Customer_PO_Management"
+UC_Customer_PO_Management = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_NC_Customer_Rebate_PN_WH"
+ODS_UC_NC_Customer_Rebate_PN_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_NC_Customer_Rebate_PN_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_NC_Customer_Rebate_PN_STG"
+UC_NC_Customer_Rebate_PN_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_NC_Customer_Rebate_PN"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_NC_Customer_Rebate_PN_LD"
+ODS_UC_NC_Customer_Rebate_PN_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_NC_Customer_Rebate_PN"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_NC_Customer_Rebate_PN"
+UC_NC_Customer_Rebate_PN = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Risk_Shipment_Weekly_WH"
+ODS_UC_Risk_Shipment_Weekly_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Risk_Shipment_Weekly_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Risk_Shipment_Weekly_STG"
+UC_Risk_Shipment_Weekly_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Risk_Shipment_Weekly"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Risk_Shipment_Weekly_LD"
+ODS_UC_Risk_Shipment_Weekly_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Risk_Shipment_Weekly"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Risk_Shipment_Weekly"
+UC_Risk_Shipment_Weekly = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_NC_ROYALTY_REPORT_WH"
+ODS_UC_NC_ROYALTY_REPORT_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_NC_ROYALTY_REPORT_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_NC_ROYALTY_REPORT_STG"
+UC_NC_ROYALTY_REPORT_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_NC_ROYALTY_REPORT"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_NC_ROYALTY_REPORT_LD"
+ODS_UC_NC_ROYALTY_REPORT_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_NC_ROYALTY_REPORT"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_NC_ROYALTY_REPORT"
+UC_NC_ROYALTY_REPORT = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UG_PIPELINE_PROJECT_CONVERSION"
+UG_PIPELINE_PROJECT_CONVERSION = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_GBD,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UG_PIPELINE_PROJECT_CONVERSION_WH"
+ODS_UG_PIPELINE_PROJECT_CONVERSION_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_GBD,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/GBD/UG_PIPELINE_PROJECT_CONVERSION_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UG_PIPELINE_PROJECT_CONVERSION_STG"
+UG_PIPELINE_PROJECT_CONVERSION_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_GBD,
+    sql= "TRUNCATE TABLE STAGE.UG_PIPELINE_PROJECT_CONVERSION"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UG_PIPELINE_PROJECT_CONVERSION_LD"
+ODS_UG_PIPELINE_PROJECT_CONVERSION_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_GBD,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD GBD UG_PIPELINE_PROJECT_CONVERSION"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_SENIORITY_WH"
+ODS_UH_SENIORITY_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_SENIORITY_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_SENIORITY_STG"
+UH_SENIORITY_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_SENIORITY"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_SENIORITY_LD"
+ODS_UH_SENIORITY_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_SENIORITY"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_SENIORITY"
+UH_SENIORITY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_HEADCOUNT_BUDGET_WH"
+ODS_UH_HEADCOUNT_BUDGET_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_HEADCOUNT_BUDGET_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_HEADCOUNT_BUDGET_STG"
+UH_HEADCOUNT_BUDGET_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_HEADCOUNT_BUDGET"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_HEADCOUNT_BUDGET_LD"
+ODS_UH_HEADCOUNT_BUDGET_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_HEADCOUNT_BUDGET"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_HEADCOUNT_BUDGET"
+UH_HEADCOUNT_BUDGET = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_RDEXPENSE_WH"
+ODS_UH_RDEXPENSE_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_RDEXPENSE_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_RDEXPENSE_STG"
+UH_RDEXPENSE_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_RDEXPENSE"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_RDEXPENSE_LD"
+ODS_UH_RDEXPENSE_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_RDEXPENSE"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_RDEXPENSE"
+UH_RDEXPENSE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_WORKPLACE_MAPPING_WH"
+ODS_UH_WORKPLACE_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_WORKPLACE_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_WORKPLACE_MAPPING_STG"
+UH_WORKPLACE_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_WORKPLACE_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_WORKPLACE_MAPPING_LD"
+ODS_UH_WORKPLACE_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_WORKPLACE_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_WORKPLACE_MAPPING"
+UH_WORKPLACE_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_WORKLOCATION_WH"
+ODS_UH_WORKLOCATION_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_WORKLOCATION_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_WORKLOCATION_STG"
+UH_WORKLOCATION_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_WORKLOCATION"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_WORKLOCATION_LD"
+ODS_UH_WORKLOCATION_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_WORKLOCATION"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_WORKLOCATION"
+UH_WORKLOCATION = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_WORKLOCATION_MAPPING_WH"
+ODS_UH_WORKLOCATION_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_WORKLOCATION_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_WORKLOCATION_MAPPING_STG"
+UH_WORKLOCATION_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_WORKLOCATION_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_WORKLOCATION_MAPPING_LD"
+ODS_UH_WORKLOCATION_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_WORKLOCATION_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_WORKLOCATION_MAPPING"
+UH_WORKLOCATION_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_DEPTABBRE_BU_MAPPING_WH"
+ODS_UH_DEPTABBRE_BU_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_DEPTABBRE_BU_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_DEPTABBRE_BU_MAPPING_STG"
+UH_DEPTABBRE_BU_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_DEPTABBRE_BU_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_DEPTABBRE_BU_MAPPING_LD"
+ODS_UH_DEPTABBRE_BU_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_DEPTABBRE_BU_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_DEPTABBRE_BU_MAPPING"
+UH_DEPTABBRE_BU_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_DEPTABBRE_WH"
+ODS_UH_DEPTABBRE_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_DEPTABBRE_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_DEPTABBRE_STG"
+UH_DEPTABBRE_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_DEPTABBRE"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_DEPTABBRE_LD"
+ODS_UH_DEPTABBRE_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_DEPTABBRE"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_DEPTABBRE"
+UH_DEPTABBRE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_DEPTUNIT_MAPPING_WH"
+ODS_UH_DEPTUNIT_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_DEPTUNIT_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_DEPTUNIT_MAPPING_STG"
+UH_DEPTUNIT_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_DEPTUNIT_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_DEPTUNIT_MAPPING_LD"
+ODS_UH_DEPTUNIT_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_DEPTUNIT_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_DEPTUNIT_MAPPING"
+UH_DEPTUNIT_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_PERSONNEL_CATEGORY_WH"
+ODS_UH_PERSONNEL_CATEGORY_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_PERSONNEL_CATEGORY_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_PERSONNEL_CATEGORY_STG"
+UH_PERSONNEL_CATEGORY_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_PERSONNEL_CATEGORY"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_PERSONNEL_CATEGORY_LD"
+ODS_UH_PERSONNEL_CATEGORY_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_PERSONNEL_CATEGORY"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_PERSONNEL_CATEGORY"
+UH_PERSONNEL_CATEGORY = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH"
+ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_PERSONNEL_CATEGORY_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_PERSONNEL_CATEGORY_MAPPING_STG"
+UH_PERSONNEL_CATEGORY_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_PERSONNEL_CATEGORY_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_PERSONNEL_CATEGORY_MAPPING_LD"
+ODS_UH_PERSONNEL_CATEGORY_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_PERSONNEL_CATEGORY_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_PERSONNEL_CATEGORY_MAPPING"
+UH_PERSONNEL_CATEGORY_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH"
+ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_PERSONNEL_SUBCATE_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_PERSONNEL_SUBCATE_MAPPING_STG"
+UH_PERSONNEL_SUBCATE_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_PERSONNEL_SUBCATE_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_PERSONNEL_SUBCATE_MAPPING_LD"
+ODS_UH_PERSONNEL_SUBCATE_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_PERSONNEL_SUBCATE_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_PERSONNEL_SUBCATE_MAPPING"
+UH_PERSONNEL_SUBCATE_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_EMPLOYMENTTYPE_MAPPING_WH"
+ODS_UH_EMPLOYMENTTYPE_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_EMPLOYMENTTYPE_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_EMPLOYMENTTYPE_MAPPING_STG"
+UH_EMPLOYMENTTYPE_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_EMPLOYMENTTYPE_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_EMPLOYMENTTYPE_MAPPING_LD"
+ODS_UH_EMPLOYMENTTYPE_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_EMPLOYMENTTYPE_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_EMPLOYMENTTYPE_MAPPING"
+UH_EMPLOYMENTTYPE_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_STAFFSTATUS_WH"
+ODS_UH_STAFFSTATUS_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_STAFFSTATUS_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_STAFFSTATUS_STG"
+UH_STAFFSTATUS_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_STAFFSTATUS"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_STAFFSTATUS_LD"
+ODS_UH_STAFFSTATUS_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_STAFFSTATUS"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_STAFFSTATUS"
+UH_STAFFSTATUS = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH"
+ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_STAFFSTATUS_TOBE_ONBOARD_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_STAFFSTATUS_TOBE_ONBOARD_STG"
+UH_STAFFSTATUS_TOBE_ONBOARD_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_STAFFSTATUS_TOBE_ONBOARD"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_STAFFSTATUS_TOBE_ONBOARD_LD"
+ODS_UH_STAFFSTATUS_TOBE_ONBOARD_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_STAFFSTATUS_TOBE_ONBOARD"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_STAFFSTATUS_TOBE_ONBOARD"
+UH_STAFFSTATUS_TOBE_ONBOARD = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_GRADE_MAPPING_WH"
+ODS_UH_GRADE_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_GRADE_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_GRADE_MAPPING_STG"
+UH_GRADE_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_GRADE_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_GRADE_MAPPING_LD"
+ODS_UH_GRADE_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_GRADE_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_GRADE_MAPPING"
+UH_GRADE_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UH_EDUCATION_MAPPING_WH"
+ODS_UH_EDUCATION_MAPPING_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/HRM/UH_EDUCATION_MAPPING_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UH_EDUCATION_MAPPING_STG"
+UH_EDUCATION_MAPPING_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    sql= "TRUNCATE TABLE STAGE.UH_EDUCATION_MAPPING"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UH_EDUCATION_MAPPING_LD"
+ODS_UH_EDUCATION_MAPPING_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD HRM UH_EDUCATION_MAPPING"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UH_EDUCATION_MAPPING"
+UH_EDUCATION_MAPPING = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_HRM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_RiskShipmentUpload_WH"
+ODS_UM_RiskShipmentUpload_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_RiskShipmentUpload_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_RiskShipmentUpload_STG"
+UM_RiskShipmentUpload_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_RiskShipmentUpload"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_RiskShipmentUpload_LD"
+ODS_UM_RiskShipmentUpload_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_RiskShipmentUpload"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_RiskShipmentUpload"
+UM_RiskShipmentUpload = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_SMT_TIME_WH"
+ODS_UM_SMT_TIME_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_SMT_TIME_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_SMT_TIME_STG"
+UM_SMT_TIME_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_SMT_TIME"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_SMT_TIME_LD"
+ODS_UM_SMT_TIME_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_SMT_TIME"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_SMT_TIME"
+UM_SMT_TIME = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_SMT_WH"
+ODS_UM_SMT_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_SMT_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_SMT_STG"
+UM_SMT_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_SMT"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_SMT_LD"
+ODS_UM_SMT_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_SMT"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_SMT"
+UM_SMT = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_ForecastUploadModel_WH"
+ODS_UM_ForecastUploadModel_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_ForecastUploadModel_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_ForecastUploadModel_STG"
+UM_ForecastUploadModel_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_ForecastUploadModel"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_ForecastUploadModel_LD"
+ODS_UM_ForecastUploadModel_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_ForecastUploadModel"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_ForecastUploadModel"
+UM_ForecastUploadModel = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_Shift_WH"
+ODS_UM_Shift_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_Shift_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_Shift_STG"
+UM_Shift_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_Shift"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_Shift_LD"
+ODS_UM_Shift_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_Shift"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_Shift"
+UM_Shift = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_Resource_Mapping_Process_WH"
+ODS_UM_Resource_Mapping_Process_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_Resource_Mapping_Process_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_Resource_Mapping_Process_STG"
+UM_Resource_Mapping_Process_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_Resource_Mapping_Process"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_Resource_Mapping_Process_LD"
+ODS_UM_Resource_Mapping_Process_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_Resource_Mapping_Process"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_Resource_Mapping_Process"
+UM_Resource_Mapping_Process = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UM_Work_in_Process_Category_WH"
+ODS_UM_Work_in_Process_Category_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/MFG/UM_Work_in_Process_Category_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UM_Work_in_Process_Category_STG"
+UM_Work_in_Process_Category_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    sql= "TRUNCATE TABLE STAGE.UM_Work_in_Process_Category"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UM_Work_in_Process_Category_LD"
+ODS_UM_Work_in_Process_Category_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD MFG UM_Work_in_Process_Category"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UM_Work_in_Process_Category"
+UM_Work_in_Process_Category = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_MFG,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UP_consign_vendor_prod_map_WH"
+ODS_UP_consign_vendor_prod_map_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/PRD/UP_consign_vendor_prod_map_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UP_consign_vendor_prod_map_STG"
+UP_consign_vendor_prod_map_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    sql= "TRUNCATE TABLE STAGE.UP_consign_vendor_prod_map"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UP_consign_vendor_prod_map_LD"
+ODS_UP_consign_vendor_prod_map_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD PRD UP_consign_vendor_prod_map"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UP_consign_vendor_prod_map"
+UP_consign_vendor_prod_map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UP_Expense_Budget_prod_map_WH"
+ODS_UP_Expense_Budget_prod_map_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/PRD/UP_Expense_Budget_prod_map_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UP_Expense_Budget_prod_map_STG"
+UP_Expense_Budget_prod_map_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    sql= "TRUNCATE TABLE STAGE.UP_Expense_Budget_prod_map"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UP_Expense_Budget_prod_map_LD"
+ODS_UP_Expense_Budget_prod_map_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD PRD UP_Expense_Budget_prod_map"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UP_Expense_Budget_prod_map"
+UP_Expense_Budget_prod_map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_PRD,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_MtlScrapCost_WH"
+ODS_UQ_MtlScrapCost_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_MtlScrapCost_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_MtlScrapCost_STG"
+UQ_MtlScrapCost_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_MtlScrapCost"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_MtlScrapCost_LD"
+ODS_UQ_MtlScrapCost_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_MtlScrapCost"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_MtlScrapCost"
+UQ_MtlScrapCost = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_CSDCustomerPaidService_WH"
+ODS_UQ_CSDCustomerPaidService_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_CSDCustomerPaidService_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_CSDCustomerPaidService_STG"
+UQ_CSDCustomerPaidService_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_CSDCustomerPaidService"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_CSDCustomerPaidService_LD"
+ODS_UQ_CSDCustomerPaidService_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_CSDCustomerPaidService"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_CSDCustomerPaidService"
+UQ_CSDCustomerPaidService = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_CSDPlannedShippingQty_WH"
+ODS_UQ_CSDPlannedShippingQty_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_CSDPlannedShippingQty_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_CSDPlannedShippingQty_STG"
+UQ_CSDPlannedShippingQty_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_CSDPlannedShippingQty"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_CSDPlannedShippingQty_LD"
+ODS_UQ_CSDPlannedShippingQty_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_CSDPlannedShippingQty"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_CSDPlannedShippingQty"
+UQ_CSDPlannedShippingQty = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_InventoryOwner_WH"
+ODS_UQ_InventoryOwner_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_InventoryOwner_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_InventoryOwner_STG"
+UQ_InventoryOwner_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_InventoryOwner"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_InventoryOwner_LD"
+ODS_UQ_InventoryOwner_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_InventoryOwner"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_InventoryOwner"
+UQ_InventoryOwner = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_OnSiteReworkQty_WH"
+ODS_UQ_OnSiteReworkQty_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_OnSiteReworkQty_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_OnSiteReworkQty_STG"
+UQ_OnSiteReworkQty_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_OnSiteReworkQty"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_OnSiteReworkQty_LD"
+ODS_UQ_OnSiteReworkQty_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_OnSiteReworkQty"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_OnSiteReworkQty"
+UQ_OnSiteReworkQty = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_QualityReturnQty_WH"
+ODS_UQ_QualityReturnQty_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_QualityReturnQty_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_QualityReturnQty_STG"
+UQ_QualityReturnQty_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_QualityReturnQty"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_QualityReturnQty_LD"
+ODS_UQ_QualityReturnQty_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_QualityReturnQty"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_QualityReturnQty"
+UQ_QualityReturnQty = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_JQMList_WH"
+ODS_UQ_JQMList_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_JQMList_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_JQMList_STG"
+UQ_JQMList_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_JQMList"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_JQMList_LD"
+ODS_UQ_JQMList_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_JQMList"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_JQMList"
+UQ_JQMList = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_S1_WH"
+ODS_UQ_IQC_DailyManpower_S1_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_S1_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_S1_STG"
+UQ_IQC_DailyManpower_S1_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_S1"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_S1_LD"
+ODS_UQ_IQC_DailyManpower_S1_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_S1"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_S1"
+UQ_IQC_DailyManpower_S1 = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_NQJ_WH"
+ODS_UQ_IQC_DailyManpower_NQJ_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_NQJ_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_NQJ_STG"
+UQ_IQC_DailyManpower_NQJ_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_NQJ"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_NQJ_LD"
+ODS_UQ_IQC_DailyManpower_NQJ_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_NQJ"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_NQJ"
+UQ_IQC_DailyManpower_NQJ = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_NYC_WH"
+ODS_UQ_IQC_DailyManpower_NYC_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_NYC_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_NYC_STG"
+UQ_IQC_DailyManpower_NYC_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_NYC"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_NYC_LD"
+ODS_UQ_IQC_DailyManpower_NYC_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_NYC"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_NYC"
+UQ_IQC_DailyManpower_NYC = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_NQX_WH"
+ODS_UQ_IQC_DailyManpower_NQX_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_NQX_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_NQX_STG"
+UQ_IQC_DailyManpower_NQX_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_NQX"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_NQX_LD"
+ODS_UQ_IQC_DailyManpower_NQX_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_NQX"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_NQX"
+UQ_IQC_DailyManpower_NQX = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_NVN_WH"
+ODS_UQ_IQC_DailyManpower_NVN_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_NVN_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_NVN_STG"
+UQ_IQC_DailyManpower_NVN_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_NVN"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_NVN_LD"
+ODS_UQ_IQC_DailyManpower_NVN_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_NVN"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_NVN"
+UQ_IQC_DailyManpower_NVN = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_IQC_DailyManpower_S2_WH"
+ODS_UQ_IQC_DailyManpower_S2_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_IQC_DailyManpower_S2_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_IQC_DailyManpower_S2_STG"
+UQ_IQC_DailyManpower_S2_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_IQC_DailyManpower_S2"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_IQC_DailyManpower_S2_LD"
+ODS_UQ_IQC_DailyManpower_S2_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_IQC_DailyManpower_S2"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_IQC_DailyManpower_S2"
+UQ_IQC_DailyManpower_S2 = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_InventoryOwnerList_WH"
+ODS_UQ_InventoryOwnerList_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_InventoryOwnerList_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_InventoryOwnerList_STG"
+UQ_InventoryOwnerList_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_InventoryOwnerList"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_InventoryOwnerList_LD"
+ODS_UQ_InventoryOwnerList_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_InventoryOwnerList"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_InventoryOwnerList"
+UQ_InventoryOwnerList = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_MoPartType_WH"
+ODS_UQ_MoPartType_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_MoPartType_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_MoPartType_STG"
+UQ_MoPartType_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_MoPartType"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_MoPartType_LD"
+ODS_UQ_MoPartType_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_MoPartType"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_MoPartType"
+UQ_MoPartType = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_Escape_WH"
+ODS_UQ_Escape_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_Escape_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_Escape_STG"
+UQ_Escape_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_Escape"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_Escape_LD"
+ODS_UQ_Escape_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_Escape"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_Escape"
+UQ_Escape = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_US_reason_code_WH"
+ODS_US_reason_code_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/SCM/US_reason_code_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "US_reason_code_STG"
+US_reason_code_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    sql= "TRUNCATE TABLE STAGE.US_reason_code"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_US_reason_code_LD"
+ODS_US_reason_code_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD SCM US_reason_code"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "US_reason_code"
+US_reason_code = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_US_scrap_reason_code_WH"
+ODS_US_scrap_reason_code_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/SCM/US_scrap_reason_code_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "US_scrap_reason_code_STG"
+US_scrap_reason_code_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    sql= "TRUNCATE TABLE STAGE.US_scrap_reason_code"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_US_scrap_reason_code_LD"
+ODS_US_scrap_reason_code_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD SCM US_scrap_reason_code"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "US_scrap_reason_code"
+US_scrap_reason_code = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_US_BOM_PRODUCT_LIST_WH"
+ODS_US_BOM_PRODUCT_LIST_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/SCM/US_BOM_PRODUCT_LIST_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "US_BOM_PRODUCT_LIST_STG"
+US_BOM_PRODUCT_LIST_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    sql= "TRUNCATE TABLE STAGE.US_BOM_PRODUCT_LIST"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_US_BOM_PRODUCT_LIST_LD"
+ODS_US_BOM_PRODUCT_LIST_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD SCM US_BOM_PRODUCT_LIST"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "US_BOM_PRODUCT_LIST"
+US_BOM_PRODUCT_LIST = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_US_POTransfer_WH"
+ODS_US_POTransfer_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/SCM/US_POTransfer_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "US_POTransfer_STG"
+US_POTransfer_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    sql= "TRUNCATE TABLE STAGE.US_POTransfer"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_US_POTransfer_LD"
+ODS_US_POTransfer_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD SCM US_POTransfer"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "US_POTransfer"
+US_POTransfer = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_US_ExcessonHandTransfer_WH"
+ODS_US_ExcessonHandTransfer_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/SCM/US_ExcessonHandTransfer_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "US_ExcessonHandTransfer_STG"
+US_ExcessonHandTransfer_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    sql= "TRUNCATE TABLE STAGE.US_ExcessonHandTransfer"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_US_ExcessonHandTransfer_LD"
+ODS_US_ExcessonHandTransfer_LD = BashOperator(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD SCM US_ExcessonHandTransfer"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "US_ExcessonHandTransfer"
+US_ExcessonHandTransfer = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=D_ODS_SCM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_FaultInjectionRecord_WH"
+ODS_UQ_FaultInjectionRecord_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_FaultInjectionRecord_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_FaultInjectionRecord_STG"
+UQ_FaultInjectionRecord_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_FaultInjectionRecord"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_FaultInjectionRecord_LD"
+ODS_UQ_FaultInjectionRecord_LD = BashOperator(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_FaultInjectionRecord"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_FaultInjectionRecord"
+UQ_FaultInjectionRecord = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_QSCANTrackingRecord_WH"
+ODS_UQ_QSCANTrackingRecord_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_QSCANTrackingRecord_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_QSCANTrackingRecord_STG"
+UQ_QSCANTrackingRecord_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_QSCANTrackingRecord"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_QSCANTrackingRecord_LD"
+ODS_UQ_QSCANTrackingRecord_LD = BashOperator(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_QSCANTrackingRecord"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_QSCANTrackingRecord"
+UQ_QSCANTrackingRecord = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UQ_ModelMPInfo_WH"
+ODS_UQ_ModelMPInfo_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/QAM/UQ_ModelMPInfo_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UQ_ModelMPInfo_STG"
+UQ_ModelMPInfo_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    sql= "TRUNCATE TABLE STAGE.UQ_ModelMPInfo"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UQ_ModelMPInfo_LD"
+ODS_UQ_ModelMPInfo_LD = BashOperator(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD QAM UQ_ModelMPInfo"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UQ_ModelMPInfo"
+UQ_ModelMPInfo = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=W_ODS_QAM,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Customer_Grouping_Map_WH"
+ODS_UC_Customer_Grouping_Map_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Customer_Grouping_Map_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Customer_Grouping_Map_STG"
+UC_Customer_Grouping_Map_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Customer_Grouping_Map"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Customer_Grouping_Map_LD"
+ODS_UC_Customer_Grouping_Map_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Customer_Grouping_Map"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Customer_Grouping_Map"
+UC_Customer_Grouping_Map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Group_Customer_Location_WH"
+ODS_UC_Group_Customer_Location_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Group_Customer_Location_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Group_Customer_Location_STG"
+UC_Group_Customer_Location_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Group_Customer_Location"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Group_Customer_Location_LD"
+ODS_UC_Group_Customer_Location_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Group_Customer_Location"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Group_Customer_Location"
+UC_Group_Customer_Location = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Project_Decision_Customer_WH"
+ODS_UC_Project_Decision_Customer_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Project_Decision_Customer_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Project_Decision_Customer_STG"
+UC_Project_Decision_Customer_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Project_Decision_Customer"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Project_Decision_Customer_LD"
+ODS_UC_Project_Decision_Customer_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Project_Decision_Customer"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Project_Decision_Customer"
+UC_Project_Decision_Customer = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_NA_Customer_Sub_Group_WH"
+ODS_UC_NA_Customer_Sub_Group_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_NA_Customer_Sub_Group_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_NA_Customer_Sub_Group_STG"
+UC_NA_Customer_Sub_Group_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_NA_Customer_Sub_Group"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_NA_Customer_Sub_Group_LD"
+ODS_UC_NA_Customer_Sub_Group_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_NA_Customer_Sub_Group"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_NA_Customer_Sub_Group"
+UC_NA_Customer_Sub_Group = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Group_Customer_Industry_Type_WH"
+ODS_UC_Group_Customer_Industry_Type_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Group_Customer_Industry_Type_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Group_Customer_Industry_Type_STG"
+UC_Group_Customer_Industry_Type_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Group_Customer_Industry_Type"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Group_Customer_Industry_Type_LD"
+ODS_UC_Group_Customer_Industry_Type_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Group_Customer_Industry_Type"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Group_Customer_Industry_Type"
+UC_Group_Customer_Industry_Type = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Global_Telecom_Operator_WH"
+ODS_UC_Global_Telecom_Operator_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Global_Telecom_Operator_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Global_Telecom_Operator_STG"
+UC_Global_Telecom_Operator_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Global_Telecom_Operator"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Global_Telecom_Operator_LD"
+ODS_UC_Global_Telecom_Operator_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Global_Telecom_Operator"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Global_Telecom_Operator"
+UC_Global_Telecom_Operator = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Product_Mapping_Table_WH"
+ODS_UC_Product_Mapping_Table_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Product_Mapping_Table_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Product_Mapping_Table_STG"
+UC_Product_Mapping_Table_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Product_Mapping_Table"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Product_Mapping_Table_LD"
+ODS_UC_Product_Mapping_Table_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Product_Mapping_Table"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Product_Mapping_Table"
+UC_Product_Mapping_Table = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Market_Share_Market_Shipment_WH"
+ODS_UC_Market_Share_Market_Shipment_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Market_Share_Market_Shipment_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Market_Share_Market_Shipment_STG"
+UC_Market_Share_Market_Shipment_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Market_Share_Market_Shipment"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Market_Share_Market_Shipment_LD"
+ODS_UC_Market_Share_Market_Shipment_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Market_Share_Market_Shipment"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Market_Share_Market_Shipment"
+UC_Market_Share_Market_Shipment = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH"
+ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_WNC_BI_SHIPMENT_QTY_TABLE_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_WNC_BI_SHIPMENT_QTY_TABLE_STG"
+UC_WNC_BI_SHIPMENT_QTY_TABLE_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_WNC_BI_SHIPMENT_QTY_TABLE"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_LD"
+ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_WNC_BI_SHIPMENT_QTY_TABLE"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_WNC_BI_SHIPMENT_QTY_TABLE"
+UC_WNC_BI_SHIPMENT_QTY_TABLE = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Product_Segment_Map_table_WH"
+ODS_UC_Product_Segment_Map_table_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Product_Segment_Map_table_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Product_Segment_Map_table_STG"
+UC_Product_Segment_Map_table_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Product_Segment_Map_table"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Product_Segment_Map_table_LD"
+ODS_UC_Product_Segment_Map_table_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Product_Segment_Map_table"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Product_Segment_Map_table"
+UC_Product_Segment_Map_table = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_Market_Tam_Product_Map_WH"
+ODS_UC_Market_Tam_Product_Map_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_Market_Tam_Product_Map_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_Market_Tam_Product_Map_STG"
+UC_Market_Tam_Product_Map_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_Market_Tam_Product_Map"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_Market_Tam_Product_Map_LD"
+ODS_UC_Market_Tam_Product_Map_LD = BashOperator(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_Market_Tam_Product_Map"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_Market_Tam_Product_Map"
+UC_Market_Tam_Product_Map = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=M_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
+
+# JOB_TYPE=WATCH
+my_taskid = "ODS_UC_SW_Centric_Product_Model_WH"
+ODS_UC_SW_Centric_Product_Model_WH = FileSensor(
+    pool = "file_pool",
+    task_id=my_taskid,
+    dag=Y_ODS_CUS,
+    filepath= "{{ var.value.DIR_SOURCE }}UPD/CUS/UC_SW_Centric_Product_Model_{{ds_nodash}}.D"
+    )
+
+# JOB_TYPE=ISQL
+my_taskid = "UC_SW_Centric_Product_Model_STG"
+UC_SW_Centric_Product_Model_STG = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=Y_ODS_CUS,
+    sql= "TRUNCATE TABLE STAGE.UC_SW_Centric_Product_Model"
+
+    )
+
+# JOB_TYPE=ODS-UIMP
+my_taskid = "ODS_UC_SW_Centric_Product_Model_LD"
+ODS_UC_SW_Centric_Product_Model_LD = BashOperator(
+    task_id=my_taskid,
+    dag=Y_ODS_CUS,
+    bash_command="{{var.value.DIR_BIN}}ods_ora_imp.sh {{var.value.ETLUSER}} {{var.value.ETLPWD}} {{var.value.DW_HOST}} {{var.value.DIR_ETLBASE}} {{ds_nodash}} UPD CUS UC_SW_Centric_Product_Model"
+    )
+
+# JOB_TYPE=SQL
+my_taskid = "UC_SW_Centric_Product_Model"
+UC_SW_Centric_Product_Model = OracleOperatorWithTemplatedParams(
+    task_id=my_taskid,
+    dag=Y_ODS_CUS,
+    parameters=({":END_DT_CHAR":"{{ ds_nodash }}"}),
+    sql= "Begin SQLEXT." + my_taskid + "_SP("+  
+        ":END_DT_CHAR"+
+        "); End;"
+    )
 
 ExternalTaskSensor.ui_color = 'white'
 ExternalTaskSensor.ui_fgcolor = 'blue'
@@ -734,9 +3739,46 @@ ExternalTaskSensor.ui_fgcolor = 'blue'
 
 # 	XSLT:loop: JOB_FLOW_NAME-and-PRE_JOB: External:START{{
 
+def branch_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG","D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG","D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_PRD_SRC,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_PRD_SRC,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG"
 D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
@@ -744,12 +3786,59 @@ D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
     mode="reschedule",
     dag=D_ODS_PRD_SRC,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL"
 D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -757,12 +3846,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL)
+
+D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B","D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B","D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B"
 D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -770,12 +3906,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B)
+
+D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE"
 D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -783,12 +3966,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE)
+
+D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE)
+
+def branch_D_SDM_PRDxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG","D_SDM_PRDxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG","D_SDM_PRDxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_SDM_PRDxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_STG_INIT__SYS_STS_STG,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG"
+proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_STG_INIT__SYS_STS_STG"
 D_SDM_PRDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
@@ -796,12 +4026,59 @@ D_SDM_PRDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(D_SDM_PRDxD_STG_INIT__SYS_STS_STG)
+
+D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_FIN")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT","D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT","D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"]
+    return ["proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"
+BRANCH_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT"
 D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_FIN",
@@ -809,12 +4086,59 @@ D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT)
+
+BRANCH_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT)
+
+D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE","D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE","D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE"
 D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -822,12 +4146,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE)
+
+D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT","D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT"
 D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -835,12 +4206,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT)
+
+D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS","D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS","D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS"
 D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -848,12 +4266,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS)
+
+D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW"
 D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -861,12 +4326,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW)
+
+D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW"
 D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -874,12 +4386,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW)
+
+D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW"
 D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -887,12 +4446,59 @@ D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW)
+
+D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW","D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW"
 D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_PRD_SRC",
@@ -900,12 +4506,119 @@ D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW)
+
+D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW)
+
+def branch_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_HRM")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE","D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE","D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"]
+    return ["proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"
+BRANCH_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"
+proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE"
+D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_ODS_HRM",
+    external_task_id="UH_RDEXPENSE",
+    mode="reschedule",
+    dag=D_SDM_PRD,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE.set_downstream(proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE)
+
+BRANCH_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE.set_downstream(D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE)
+
+D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE.set_downstream(proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE)
+
+def branch_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_MFG_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP","D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP","D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"]
+    return ["proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"
+BRANCH_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"
+proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP"
 D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_ODS_MFG_SRC",
@@ -913,12 +4626,59 @@ D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP.set_downstream(proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP)
+
+BRANCH_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP.set_downstream(D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP)
+
+D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP.set_downstream(proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP)
+
+def branch_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_SCM")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER","D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER","D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"]
+    return ["proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"
+BRANCH_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"
+proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER"
 D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_SCM",
@@ -926,12 +4686,119 @@ D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER= ExternalTaskSensor(
     mode="reschedule",
     dag=D_SDM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER.set_downstream(proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER)
+
+BRANCH_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER.set_downstream(D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER)
+
+D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER.set_downstream(proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER)
+
+def branch_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_ODS_PRD_SRC")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V","D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V","D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"]
+    return ["proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"]
+
+
+my_taskid = "BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V,
+    dag=D_SDM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_SDM_PRD,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V"
+D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_ODS_PRD_SRC",
+    external_task_id="MV_PROJECT_ACTIVITY_V",
+    mode="reschedule",
+    dag=D_SDM_PRD,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V)
+
+BRANCH_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V.set_downstream(D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V)
+
+D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V.set_downstream(proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE","D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE","D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE"
 D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -939,12 +4806,59 @@ D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE)
+
+D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME","D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME","D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME"
 D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -952,12 +4866,59 @@ D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME)
+
+D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME","D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME","D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME"
 D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -965,12 +4926,59 @@ D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME)
+
+D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP","D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP","D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP"
 D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -978,12 +4986,59 @@ D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP)
+
+D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST","D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST","D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST"
 D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -991,12 +5046,59 @@ D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST)
+
+D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE"
 D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1004,12 +5106,59 @@ D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE)
+
+D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP","D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP","D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP"
 D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1017,25 +5166,59 @@ D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
-my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"
-D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE= ExternalTaskSensor(
-#    schedule_interval=None,
-    pool = "sensor_pool",
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP)
+
+D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP)
+
+def branch_D_DM_PRDxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG","D_DM_PRDxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG","D_DM_PRDxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_DM_PRDxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
     task_id=my_taskid,
-    external_dag_id="D_SDM_PRD",
-    external_task_id="SDM_TESTING_EXPENSE",
-    mode="reschedule",
+    python_callable=branch_D_DM_PRDxD_STG_INIT__SYS_STS_STG,
     dag=D_DM_PRD,
-    check_existence=True,
-#    execution_delta=None,  # Same day as today
+    provide_context=True,
 )
 
+
+my_taskid = "proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG"
+proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_STG_INIT__SYS_STS_STG"
 D_DM_PRDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_STG_INIT",
@@ -1043,12 +5226,119 @@ D_DM_PRDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(D_DM_PRDxD_STG_INIT__SYS_STS_STG)
+
+D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE"
+D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_SDM_PRD",
+    external_task_id="SDM_TESTING_EXPENSE",
+    mode="reschedule",
+    dag=D_DM_PRD,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE)
+
+D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE","D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE"
 D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1056,12 +5346,59 @@ D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE)
+
+D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP","D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP","D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP"
 D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1069,12 +5406,59 @@ D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP)
+
+D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_ITEM(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM","D_DM_PRDxD_SDM_PRD__SDM_ITEM"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM","D_DM_PRDxD_SDM_PRD__SDM_ITEM"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ITEM"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ITEM= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_ITEM,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_ITEM"
 D_DM_PRDxD_SDM_PRD__SDM_ITEM= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1082,12 +5466,59 @@ D_DM_PRDxD_SDM_PRD__SDM_ITEM= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ITEM.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ITEM.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_ITEM)
+
+D_DM_PRDxD_SDM_PRD__SDM_ITEM.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY","D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY","D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY"
 D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1095,12 +5526,59 @@ D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY)
+
+D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON","D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON","D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON"
 D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1108,12 +5586,59 @@ D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
 
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON)
+
+D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON)
+
+def branch_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_SDM_PRD")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE","D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE","D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"]
+    return ["proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"]
+
+
+my_taskid = "BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE,
+    dag=D_DM_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_DM_PRD,
+)
+
+
+#   Cross dag sensor
+			
 my_taskid = "D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE"
 D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE= ExternalTaskSensor(
-#    schedule_interval=None,
     pool = "sensor_pool",
     task_id=my_taskid,
     external_dag_id="D_SDM_PRD",
@@ -1121,8 +5646,618 @@ D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE= ExternalTaskSensor(
     mode="reschedule",
     dag=D_DM_PRD,
     check_existence=True,
-#    execution_delta=None,  # Same day as today
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
 )
+
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE)
+
+BRANCH_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE.set_downstream(D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE)
+
+D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE.set_downstream(proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE)
+
+def branch_D_ODS_CUSxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG","D_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG","D_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_CUSxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_CUSxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_CUS,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_CUS,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+D_ODS_CUSxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_CUS,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_GBDxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG","D_ODS_GBDxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG","D_ODS_GBDxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_GBDxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_GBDxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_GBDxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_GBD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_GBD,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_GBDxD_STG_INIT__SYS_STS_STG"
+D_ODS_GBDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_GBD,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_GBDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_GBDxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_GBDxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_GBDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_HRMxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG","D_ODS_HRMxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG","D_ODS_HRMxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_HRMxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_HRMxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_HRMxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_HRM,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_HRM,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_HRMxD_STG_INIT__SYS_STS_STG"
+D_ODS_HRMxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_HRM,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_HRMxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_MFGxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG","D_ODS_MFGxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG","D_ODS_MFGxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_MFGxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_MFGxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_MFGxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_MFG,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_MFG,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_MFGxD_STG_INIT__SYS_STS_STG"
+D_ODS_MFGxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_MFG,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_MFGxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_PRDxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG","D_ODS_PRDxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG","D_ODS_PRDxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_PRDxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_PRDxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_PRDxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_PRD,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_PRD,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_PRDxD_STG_INIT__SYS_STS_STG"
+D_ODS_PRDxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_PRD,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_PRDxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_QAMxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG","D_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG","D_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_QAMxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_QAMxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_QAM,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_QAM,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+D_ODS_QAMxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_QAM,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+def branch_D_ODS_SCMxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG","D_ODS_SCMxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG","D_ODS_SCMxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_D_ODS_SCMxD_STG_INIT__SYS_STS_STG"
+BRANCH_D_ODS_SCMxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_D_ODS_SCMxD_STG_INIT__SYS_STS_STG,
+    dag=D_ODS_SCM,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG"
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=D_ODS_SCM,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "D_ODS_SCMxD_STG_INIT__SYS_STS_STG"
+D_ODS_SCMxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=D_ODS_SCM,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(D_ODS_SCMxD_STG_INIT__SYS_STS_STG)
+
+D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG)
+
+def branch_W_ODS_QAMxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG","W_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG","W_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_W_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+BRANCH_W_ODS_QAMxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_W_ODS_QAMxD_STG_INIT__SYS_STS_STG,
+    dag=W_ODS_QAM,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=W_ODS_QAM,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "W_ODS_QAMxD_STG_INIT__SYS_STS_STG"
+W_ODS_QAMxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=W_ODS_QAM,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(W_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG)
+
+def branch_M_ODS_CUSxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG","M_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG","M_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_M_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+BRANCH_M_ODS_CUSxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_M_ODS_CUSxD_STG_INIT__SYS_STS_STG,
+    dag=M_ODS_CUS,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=M_ODS_CUS,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "M_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+M_ODS_CUSxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=M_ODS_CUS,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(M_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+def branch_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG(**context):
+    mydag = context["dag"]
+    dagbag = DagBag()
+    upstream = dagbag.get_dag("D_STG_INIT")
+			
+    # print("branch::DEBUG:upstream.latest_execution_date:", upstream.latest_execution_date)
+    # print("branch::DEBUG:mydag.execution_date:", context['execution_date'])
+    up_sch_interval = std_interval.get(upstream.schedule_interval)
+    my_sch_interval = std_interval.get(mydag.schedule_interval)
+
+    if up_sch_interval is None or my_sch_interval is None:
+        if (up_sch_interval is None and my_sch_interval is None) and (upstream.schedule_interval == mydag.schedule_interval):
+            return ["proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG","Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    elif std_interval[upstream.schedule_interval] >= std_interval[mydag.schedule_interval]:
+        if upstream.latest_execution_date == context["execution_date"]:
+            return ["proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG","Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+    return ["proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"]
+
+
+my_taskid = "BRANCH_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+BRANCH_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG= BranchPythonOperator(
+    task_id=my_taskid,
+    python_callable=branch_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG,
+    dag=Y_ODS_CUS,
+    provide_context=True,
+)
+
+
+my_taskid = "proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG= DummyOperator(
+    task_id=my_taskid,
+    trigger_rule="none_failed_or_skipped",
+    dag=Y_ODS_CUS,
+)
+
+
+#   Cross dag sensor
+			
+my_taskid = "Y_ODS_CUSxD_STG_INIT__SYS_STS_STG"
+Y_ODS_CUSxD_STG_INIT__SYS_STS_STG= ExternalTaskSensor(
+    pool = "sensor_pool",
+    task_id=my_taskid,
+    external_dag_id="D_STG_INIT",
+    external_task_id="SYS_STS_STG",
+    mode="reschedule",
+    dag=Y_ODS_CUS,
+    check_existence=True,
+    timeout=60*60*1,
+    retries=5,
+    retry_delay=timedelta(minutes=3),
+    execution_date_fn=sqlg_exec_date_fn
+)
+
+
+BRANCH_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+BRANCH_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(Y_ODS_CUSxD_STG_INIT__SYS_STS_STG)
+
+Y_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG)
 	
 # 	XSLT:loop: JOB_FLOW_NAME-and-PRE_JOB: External: END}}
 
@@ -1131,85 +6266,86 @@ D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE= ExternalTaskSensor(
 
 # 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
 # 	 	FLOW: D_ODS_PRD_SRC.MTL_SYSTEM_ITEMS_B
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_SYSTEM_ITEMS_B)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_COLUMNS)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_LOOKUP_TYPES)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_LOOKUP_VALUES)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_TABLES)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CATEGORIES_B)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CATEGORY_SETS_B)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CUSTOMER_ITEMS)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_CATALOG_GROUPS_B)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_CATEGORIES)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_STATUS_TL)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(PRJ_WORKTIMEDATA)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_MODEL)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_PROJECT)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_TFD)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(Z_CDOCUMENT_CHECKING_RULE)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_XXPLM_MODEL_CHECKRULE_V)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_EC_CHANGE_TYPE)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(NSP_REQ_HEADERS)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(NSP_REQ_LINES)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_HEADER_TW)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_LINEEE_TW)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_LINEER_TW)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_BTMS_EXPENSEPROJECT_TW)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_PROJECT_ACTIVITY_V)
-D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_XXPLM_CFDMETADATA_V)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_SYSTEM_ITEMS_B)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_COLUMNS)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_LOOKUP_TYPES)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_LOOKUP_VALUES)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(FND_TABLES)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CATEGORIES_B)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CATEGORY_SETS_B)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_CUSTOMER_ITEMS)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_CATALOG_GROUPS_B)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_CATEGORIES)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MTL_ITEM_STATUS_TL)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(PRJ_WORKTIMEDATA)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_MODEL)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_PROJECT)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_TFD)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(Z_CDOCUMENT_CHECKING_RULE)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_XXPLM_MODEL_CHECKRULE_V)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(XXPLM_EC_CHANGE_TYPE)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(NSP_REQ_HEADERS)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(NSP_REQ_LINES)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_HEADER_TW)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_LINEEE_TW)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_PCS_LINEER_TW)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(EFLOW_BTMS_EXPENSEPROJECT_TW)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_PROJECT_ACTIVITY_V)
+proxy_D_ODS_PRD_SRCxD_STG_INIT__SYS_STS_STG.set_downstream(MV_XXPLM_CFDMETADATA_V)
 
 # 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
 # 	 	FLOW: D_SDM_PRD.SDM_PLM_CATEGORY
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_PLM_CATEGORY)
-D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B.set_downstream(SDM_ITEM)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE.set_downstream(SDM_ECN_REASON)
-D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(SDM_XXPLM_EC)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_PLM_CATEGORY)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__MTL_SYSTEM_ITEMS_B.set_downstream(SDM_ITEM)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_EC_CHANGE_TYPE.set_downstream(SDM_ECN_REASON)
+proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(SDM_XXPLM_EC)
 
 SDM_XXPLM_EC.set_downstream(SDM_ECN_CASE_AFTER_MP)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_ECN_CASE_AFTER_MP)
-D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_ECN_CASE_AFTER_MP)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_ECN_CASE_AFTER_MP)
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_ECN_CASE_AFTER_MP)
 
 SDM_UPLOAD_CDOC_COUNT.set_downstream(SDM_CDOC_COMPLETION_RATE)
 
 SDM_TOTAL_CDOC_COUNT.set_downstream(SDM_CDOC_COMPLETION_RATE)
-D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE.set_downstream(SDM_UPLOAD_CDOC_COUNT)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__Z_CDOCUMENT_CHECKING_RULE.set_downstream(SDM_UPLOAD_CDOC_COUNT)
 
 SDM_UPLOAD_CDOC_COUNT.set_downstream(SDM_TOTAL_CDOC_COUNT)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT.set_downstream(SDM_PROJECT_CODE)
-D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_TOOLING_TOTAL_EXPENSE)
-D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_TOOLING_TOTAL_EXPENSE)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_PROJECT.set_downstream(SDM_PROJECT_CODE)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_TOOLING_TOTAL_EXPENSE)
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_TOOLING_TOTAL_EXPENSE)
 
 SDM_PROJECT_CODE.set_downstream(SDM_TOOLING_TOTAL_EXPENSE)
-D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
-D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
-D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
-D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
-D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(SDM_RD_LABOR_HOURS_EXPENSE)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_HEADER_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEEE_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_PCS_LINEER_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__EFLOW_BTMS_EXPENSEPROJECT_TW.set_downstream(SDM_DMST_AND_INTL_TRAVEL_EXP)
+proxy_D_SDM_PRDxD_ODS_HRM__UH_RDEXPENSE.set_downstream(SDM_RD_LABOR_HOURS_EXPENSE)
 
 SDM_CTF_EXPENSE.set_downstream(SDM_TESTING_EXPENSE)
 
 SDM_EQT_EXPENSE.set_downstream(SDM_TESTING_EXPENSE)
-D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_CTF_EXPENSE)
-D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_CTF_EXPENSE)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_CTF_EXPENSE)
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_CTF_EXPENSE)
 
 SDM_PROJECT_CODE.set_downstream(SDM_CTF_EXPENSE)
-D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_EQT_EXPENSE)
-D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_EQT_EXPENSE)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_EQT_EXPENSE)
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_EQT_EXPENSE)
 
 SDM_PROJECT_CODE.set_downstream(SDM_EQT_EXPENSE)
-D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_EPR_MFG_SAMPLE_BUILD_EXP)
-D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_EPR_MFG_SAMPLE_BUILD_EXP)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__NSP_REQ_HEADERS.set_downstream(SDM_EPR_MFG_SAMPLE_BUILD_EXP)
+proxy_D_SDM_PRDxD_SDM_FIN__SDM_MANUFACTURING_PLANT.set_downstream(SDM_EPR_MFG_SAMPLE_BUILD_EXP)
 
 SDM_PROJECT_CODE.set_downstream(SDM_EPR_MFG_SAMPLE_BUILD_EXP)
-D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
-D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_CDOC_PLANNED_DEV_TIME)
+proxy_D_SDM_PRDxD_ODS_MFG_SRC__XXWIP_STOREIN_USAGE_TEMP.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
+proxy_D_SDM_PRDxD_SDM_SCM__SDM_ORG_HIER.set_downstream(SDM_EPR_MFG_CONVERSION_COST)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__MV_PROJECT_ACTIVITY_V.set_downstream(SDM_CDOC_PLANNED_DEV_TIME)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_CDOC_PLANNED_DEV_TIME)
 
 SDM_CDOC_PLANNED_DEV_TIME.set_downstream(SDM_PROD_DEV_MLST_DELAY_RATE)
 
 SDM_CDOC_DELAY_TIME.set_downstream(SDM_PROD_DEV_MLST_DELAY_RATE)
-D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_CDOC_DELAY_TIME)
+proxy_D_SDM_PRDxD_ODS_PRD_SRC__XXPLM_MODEL.set_downstream(SDM_CDOC_DELAY_TIME)
 
 SDM_PRODUCT_EXPENSE_BUDGET.set_downstream(SDM_PRODUCT_ACTUAL_EXPENSE)
 
@@ -1224,23 +6360,578 @@ SDM_CTF_EXPENSE.set_downstream(SDM_PRODUCT_ACTUAL_EXPENSE)
 SDM_EQT_EXPENSE.set_downstream(SDM_PRODUCT_ACTUAL_EXPENSE)
 
 SDM_TOOLING_TOTAL_EXPENSE.set_downstream(SDM_PRODUCT_ACTUAL_EXPENSE)
-D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(SDM_PRODUCT_EXPENSE_BUDGET)
+proxy_D_SDM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(SDM_PRODUCT_EXPENSE_BUDGET)
 
 # 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
 # 	 	FLOW: D_DM_PRD.FCT_PROD_DEV_MLST_DELAY_RATE
-D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
-D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
-D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
-D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP.set_downstream(FCT_ECN_CASE_AFTER_MP)
-D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST.set_downstream(FCT_EPR_MFG_CONVERSION_COST)
-D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE.set_downstream(FCT_TOOLING_TOTAL_EXPENSE)
-D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP.set_downstream(FCT_DMST_AND_INTL_TRAVEL_EXP)
-D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE.set_downstream(FCT_TESTING_EXPENSE)
-D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(FCT_TESTING_EXPENSE)
-D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE.set_downstream(FCT_TESTING_EXPENSE)
-D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP.set_downstream(FCT_TESTING_EXPENSE)
-D_DM_PRDxD_SDM_PRD__SDM_ITEM.set_downstream(DIM_ITEM)
-D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY.set_downstream(DIM_PLM_CATEGORY)
-D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON.set_downstream(DIM_ECN_REASON)
-D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE.set_downstream(DIM_PROJECT_CODE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PROD_DEV_MLST_DELAY_RATE.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_PLANNED_DEV_TIME.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_CDOC_DELAY_TIME.set_downstream(FCT_PROD_DEV_MLST_DELAY_RATE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_CASE_AFTER_MP.set_downstream(FCT_ECN_CASE_AFTER_MP)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_CONVERSION_COST.set_downstream(FCT_EPR_MFG_CONVERSION_COST)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_TOOLING_TOTAL_EXPENSE.set_downstream(FCT_TOOLING_TOTAL_EXPENSE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_DMST_AND_INTL_TRAVEL_EXP.set_downstream(FCT_DMST_AND_INTL_TRAVEL_EXP)
+proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(FCT_RD_LABOR_HOURS_EXPENSE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_TESTING_EXPENSE.set_downstream(FCT_TESTING_EXPENSE)
+proxy_D_DM_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(FCT_TESTING_EXPENSE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EQT_EXPENSE.set_downstream(FCT_TESTING_EXPENSE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_EPR_MFG_SAMPLE_BUILD_EXP.set_downstream(FCT_TESTING_EXPENSE)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ITEM.set_downstream(DIM_ITEM)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PLM_CATEGORY.set_downstream(DIM_PLM_CATEGORY)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_ECN_REASON.set_downstream(DIM_ECN_REASON)
+proxy_D_DM_PRDxD_SDM_PRD__SDM_PROJECT_CODE.set_downstream(DIM_PROJECT_CODE)
 
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_CUS.ODS_UC_Tier1_OEM_Mapping_Table_WH
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Tier1_OEM_Mapping_Table_WH)
+
+ODS_UC_Tier1_OEM_Mapping_Table_WH.set_downstream(UC_Tier1_OEM_Mapping_Table_STG)
+
+UC_Tier1_OEM_Mapping_Table_STG.set_downstream(ODS_UC_Tier1_OEM_Mapping_Table_LD)
+
+ODS_UC_Tier1_OEM_Mapping_Table_LD.set_downstream(UC_Tier1_OEM_Mapping_Table)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Customer_Model_Name_WH)
+
+ODS_UC_Customer_Model_Name_WH.set_downstream(UC_Customer_Model_Name_STG)
+
+UC_Customer_Model_Name_STG.set_downstream(ODS_UC_Customer_Model_Name_LD)
+
+ODS_UC_Customer_Model_Name_LD.set_downstream(UC_Customer_Model_Name)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Pre_Project_information_WH)
+
+ODS_UC_Pre_Project_information_WH.set_downstream(UC_Pre_Project_information_STG)
+
+UC_Pre_Project_information_STG.set_downstream(ODS_UC_Pre_Project_information_LD)
+
+ODS_UC_Pre_Project_information_LD.set_downstream(UC_Pre_Project_information)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Premium_Freight_WH)
+
+ODS_UC_Premium_Freight_WH.set_downstream(UC_Premium_Freight_STG)
+
+UC_Premium_Freight_STG.set_downstream(ODS_UC_Premium_Freight_LD)
+
+ODS_UC_Premium_Freight_LD.set_downstream(UC_Premium_Freight)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_RFQ_Freight_Estimate_MAP_WH)
+
+ODS_UC_RFQ_Freight_Estimate_MAP_WH.set_downstream(UC_RFQ_Freight_Estimate_MAP_STG)
+
+UC_RFQ_Freight_Estimate_MAP_STG.set_downstream(ODS_UC_RFQ_Freight_Estimate_MAP_LD)
+
+ODS_UC_RFQ_Freight_Estimate_MAP_LD.set_downstream(UC_RFQ_Freight_Estimate_MAP)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_RFQ_Critical_Parts_MAP_WH)
+
+ODS_UC_RFQ_Critical_Parts_MAP_WH.set_downstream(UC_RFQ_Critical_Parts_MAP_STG)
+
+UC_RFQ_Critical_Parts_MAP_STG.set_downstream(ODS_UC_RFQ_Critical_Parts_MAP_LD)
+
+ODS_UC_RFQ_Critical_Parts_MAP_LD.set_downstream(UC_RFQ_Critical_Parts_MAP)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_RFQ_Key_parts_MAP_WH)
+
+ODS_UC_RFQ_Key_parts_MAP_WH.set_downstream(UC_RFQ_Key_parts_MAP_STG)
+
+UC_RFQ_Key_parts_MAP_STG.set_downstream(ODS_UC_RFQ_Key_parts_MAP_LD)
+
+ODS_UC_RFQ_Key_parts_MAP_LD.set_downstream(UC_RFQ_Key_parts_MAP)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Company_and_Background_Check_WH)
+
+ODS_UC_Company_and_Background_Check_WH.set_downstream(UC_Company_and_Background_Check_STG)
+
+UC_Company_and_Background_Check_STG.set_downstream(ODS_UC_Company_and_Background_Check_LD)
+
+ODS_UC_Company_and_Background_Check_LD.set_downstream(UC_Company_and_Background_Check)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Customer_PO_Management_WH)
+
+ODS_UC_Customer_PO_Management_WH.set_downstream(UC_Customer_PO_Management_STG)
+
+UC_Customer_PO_Management_STG.set_downstream(ODS_UC_Customer_PO_Management_LD)
+
+ODS_UC_Customer_PO_Management_LD.set_downstream(UC_Customer_PO_Management)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_NC_Customer_Rebate_PN_WH)
+
+ODS_UC_NC_Customer_Rebate_PN_WH.set_downstream(UC_NC_Customer_Rebate_PN_STG)
+
+UC_NC_Customer_Rebate_PN_STG.set_downstream(ODS_UC_NC_Customer_Rebate_PN_LD)
+
+ODS_UC_NC_Customer_Rebate_PN_LD.set_downstream(UC_NC_Customer_Rebate_PN)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Risk_Shipment_Weekly_WH)
+
+ODS_UC_Risk_Shipment_Weekly_WH.set_downstream(UC_Risk_Shipment_Weekly_STG)
+
+UC_Risk_Shipment_Weekly_STG.set_downstream(ODS_UC_Risk_Shipment_Weekly_LD)
+
+ODS_UC_Risk_Shipment_Weekly_LD.set_downstream(UC_Risk_Shipment_Weekly)
+proxy_D_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_NC_ROYALTY_REPORT_WH)
+
+ODS_UC_NC_ROYALTY_REPORT_WH.set_downstream(UC_NC_ROYALTY_REPORT_STG)
+
+UC_NC_ROYALTY_REPORT_STG.set_downstream(ODS_UC_NC_ROYALTY_REPORT_LD)
+
+ODS_UC_NC_ROYALTY_REPORT_LD.set_downstream(UC_NC_ROYALTY_REPORT)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_GBD.ODS_UG_PIPELINE_PROJECT_CONVERSION_WH
+proxy_D_ODS_GBDxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UG_PIPELINE_PROJECT_CONVERSION_WH)
+
+ODS_UG_PIPELINE_PROJECT_CONVERSION_WH.set_downstream(UG_PIPELINE_PROJECT_CONVERSION_STG)
+
+UG_PIPELINE_PROJECT_CONVERSION_STG.set_downstream(ODS_UG_PIPELINE_PROJECT_CONVERSION_LD)
+
+ODS_UG_PIPELINE_PROJECT_CONVERSION_LD.set_downstream(UG_PIPELINE_PROJECT_CONVERSION)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_HRM.ODS_UH_SENIORITY_WH
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_SENIORITY_WH)
+
+ODS_UH_SENIORITY_WH.set_downstream(UH_SENIORITY_STG)
+
+UH_SENIORITY_STG.set_downstream(ODS_UH_SENIORITY_LD)
+
+ODS_UH_SENIORITY_LD.set_downstream(UH_SENIORITY)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_HEADCOUNT_BUDGET_WH)
+
+ODS_UH_HEADCOUNT_BUDGET_WH.set_downstream(UH_HEADCOUNT_BUDGET_STG)
+
+UH_HEADCOUNT_BUDGET_STG.set_downstream(ODS_UH_HEADCOUNT_BUDGET_LD)
+
+ODS_UH_HEADCOUNT_BUDGET_LD.set_downstream(UH_HEADCOUNT_BUDGET)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_RDEXPENSE_WH)
+
+ODS_UH_RDEXPENSE_WH.set_downstream(UH_RDEXPENSE_STG)
+
+UH_RDEXPENSE_STG.set_downstream(ODS_UH_RDEXPENSE_LD)
+
+ODS_UH_RDEXPENSE_LD.set_downstream(UH_RDEXPENSE)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_WORKPLACE_MAPPING_WH)
+
+ODS_UH_WORKPLACE_MAPPING_WH.set_downstream(UH_WORKPLACE_MAPPING_STG)
+
+UH_WORKPLACE_MAPPING_STG.set_downstream(ODS_UH_WORKPLACE_MAPPING_LD)
+
+ODS_UH_WORKPLACE_MAPPING_LD.set_downstream(UH_WORKPLACE_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_WORKLOCATION_WH)
+
+ODS_UH_WORKLOCATION_WH.set_downstream(UH_WORKLOCATION_STG)
+
+UH_WORKLOCATION_STG.set_downstream(ODS_UH_WORKLOCATION_LD)
+
+ODS_UH_WORKLOCATION_LD.set_downstream(UH_WORKLOCATION)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_WORKLOCATION_MAPPING_WH)
+
+ODS_UH_WORKLOCATION_MAPPING_WH.set_downstream(UH_WORKLOCATION_MAPPING_STG)
+
+UH_WORKLOCATION_MAPPING_STG.set_downstream(ODS_UH_WORKLOCATION_MAPPING_LD)
+
+ODS_UH_WORKLOCATION_MAPPING_LD.set_downstream(UH_WORKLOCATION_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_DEPTABBRE_BU_MAPPING_WH)
+
+ODS_UH_DEPTABBRE_BU_MAPPING_WH.set_downstream(UH_DEPTABBRE_BU_MAPPING_STG)
+
+UH_DEPTABBRE_BU_MAPPING_STG.set_downstream(ODS_UH_DEPTABBRE_BU_MAPPING_LD)
+
+ODS_UH_DEPTABBRE_BU_MAPPING_LD.set_downstream(UH_DEPTABBRE_BU_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_DEPTABBRE_WH)
+
+ODS_UH_DEPTABBRE_WH.set_downstream(UH_DEPTABBRE_STG)
+
+UH_DEPTABBRE_STG.set_downstream(ODS_UH_DEPTABBRE_LD)
+
+ODS_UH_DEPTABBRE_LD.set_downstream(UH_DEPTABBRE)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_DEPTUNIT_MAPPING_WH)
+
+ODS_UH_DEPTUNIT_MAPPING_WH.set_downstream(UH_DEPTUNIT_MAPPING_STG)
+
+UH_DEPTUNIT_MAPPING_STG.set_downstream(ODS_UH_DEPTUNIT_MAPPING_LD)
+
+ODS_UH_DEPTUNIT_MAPPING_LD.set_downstream(UH_DEPTUNIT_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_PERSONNEL_CATEGORY_WH)
+
+ODS_UH_PERSONNEL_CATEGORY_WH.set_downstream(UH_PERSONNEL_CATEGORY_STG)
+
+UH_PERSONNEL_CATEGORY_STG.set_downstream(ODS_UH_PERSONNEL_CATEGORY_LD)
+
+ODS_UH_PERSONNEL_CATEGORY_LD.set_downstream(UH_PERSONNEL_CATEGORY)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH)
+
+ODS_UH_PERSONNEL_CATEGORY_MAPPING_WH.set_downstream(UH_PERSONNEL_CATEGORY_MAPPING_STG)
+
+UH_PERSONNEL_CATEGORY_MAPPING_STG.set_downstream(ODS_UH_PERSONNEL_CATEGORY_MAPPING_LD)
+
+ODS_UH_PERSONNEL_CATEGORY_MAPPING_LD.set_downstream(UH_PERSONNEL_CATEGORY_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH)
+
+ODS_UH_PERSONNEL_SUBCATE_MAPPING_WH.set_downstream(UH_PERSONNEL_SUBCATE_MAPPING_STG)
+
+UH_PERSONNEL_SUBCATE_MAPPING_STG.set_downstream(ODS_UH_PERSONNEL_SUBCATE_MAPPING_LD)
+
+ODS_UH_PERSONNEL_SUBCATE_MAPPING_LD.set_downstream(UH_PERSONNEL_SUBCATE_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_EMPLOYMENTTYPE_MAPPING_WH)
+
+ODS_UH_EMPLOYMENTTYPE_MAPPING_WH.set_downstream(UH_EMPLOYMENTTYPE_MAPPING_STG)
+
+UH_EMPLOYMENTTYPE_MAPPING_STG.set_downstream(ODS_UH_EMPLOYMENTTYPE_MAPPING_LD)
+
+ODS_UH_EMPLOYMENTTYPE_MAPPING_LD.set_downstream(UH_EMPLOYMENTTYPE_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_STAFFSTATUS_WH)
+
+ODS_UH_STAFFSTATUS_WH.set_downstream(UH_STAFFSTATUS_STG)
+
+UH_STAFFSTATUS_STG.set_downstream(ODS_UH_STAFFSTATUS_LD)
+
+ODS_UH_STAFFSTATUS_LD.set_downstream(UH_STAFFSTATUS)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH)
+
+ODS_UH_STAFFSTATUS_TOBE_ONBOARD_WH.set_downstream(UH_STAFFSTATUS_TOBE_ONBOARD_STG)
+
+UH_STAFFSTATUS_TOBE_ONBOARD_STG.set_downstream(ODS_UH_STAFFSTATUS_TOBE_ONBOARD_LD)
+
+ODS_UH_STAFFSTATUS_TOBE_ONBOARD_LD.set_downstream(UH_STAFFSTATUS_TOBE_ONBOARD)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_GRADE_MAPPING_WH)
+
+ODS_UH_GRADE_MAPPING_WH.set_downstream(UH_GRADE_MAPPING_STG)
+
+UH_GRADE_MAPPING_STG.set_downstream(ODS_UH_GRADE_MAPPING_LD)
+
+ODS_UH_GRADE_MAPPING_LD.set_downstream(UH_GRADE_MAPPING)
+proxy_D_ODS_HRMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UH_EDUCATION_MAPPING_WH)
+
+ODS_UH_EDUCATION_MAPPING_WH.set_downstream(UH_EDUCATION_MAPPING_STG)
+
+UH_EDUCATION_MAPPING_STG.set_downstream(ODS_UH_EDUCATION_MAPPING_LD)
+
+ODS_UH_EDUCATION_MAPPING_LD.set_downstream(UH_EDUCATION_MAPPING)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_MFG.ODS_UM_RiskShipmentUpload_WH
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_RiskShipmentUpload_WH)
+
+ODS_UM_RiskShipmentUpload_WH.set_downstream(UM_RiskShipmentUpload_STG)
+
+UM_RiskShipmentUpload_STG.set_downstream(ODS_UM_RiskShipmentUpload_LD)
+
+ODS_UM_RiskShipmentUpload_LD.set_downstream(UM_RiskShipmentUpload)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_SMT_TIME_WH)
+
+ODS_UM_SMT_TIME_WH.set_downstream(UM_SMT_TIME_STG)
+
+UM_SMT_TIME_STG.set_downstream(ODS_UM_SMT_TIME_LD)
+
+ODS_UM_SMT_TIME_LD.set_downstream(UM_SMT_TIME)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_SMT_WH)
+
+ODS_UM_SMT_WH.set_downstream(UM_SMT_STG)
+
+UM_SMT_STG.set_downstream(ODS_UM_SMT_LD)
+
+ODS_UM_SMT_LD.set_downstream(UM_SMT)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_ForecastUploadModel_WH)
+
+ODS_UM_ForecastUploadModel_WH.set_downstream(UM_ForecastUploadModel_STG)
+
+UM_ForecastUploadModel_STG.set_downstream(ODS_UM_ForecastUploadModel_LD)
+
+ODS_UM_ForecastUploadModel_LD.set_downstream(UM_ForecastUploadModel)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_Shift_WH)
+
+ODS_UM_Shift_WH.set_downstream(UM_Shift_STG)
+
+UM_Shift_STG.set_downstream(ODS_UM_Shift_LD)
+
+ODS_UM_Shift_LD.set_downstream(UM_Shift)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_Resource_Mapping_Process_WH)
+
+ODS_UM_Resource_Mapping_Process_WH.set_downstream(UM_Resource_Mapping_Process_STG)
+
+UM_Resource_Mapping_Process_STG.set_downstream(ODS_UM_Resource_Mapping_Process_LD)
+
+ODS_UM_Resource_Mapping_Process_LD.set_downstream(UM_Resource_Mapping_Process)
+proxy_D_ODS_MFGxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UM_Work_in_Process_Category_WH)
+
+ODS_UM_Work_in_Process_Category_WH.set_downstream(UM_Work_in_Process_Category_STG)
+
+UM_Work_in_Process_Category_STG.set_downstream(ODS_UM_Work_in_Process_Category_LD)
+
+ODS_UM_Work_in_Process_Category_LD.set_downstream(UM_Work_in_Process_Category)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_PRD.ODS_UP_consign_vendor_prod_map_WH
+proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UP_consign_vendor_prod_map_WH)
+
+ODS_UP_consign_vendor_prod_map_WH.set_downstream(UP_consign_vendor_prod_map_STG)
+
+UP_consign_vendor_prod_map_STG.set_downstream(ODS_UP_consign_vendor_prod_map_LD)
+
+ODS_UP_consign_vendor_prod_map_LD.set_downstream(UP_consign_vendor_prod_map)
+proxy_D_ODS_PRDxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UP_Expense_Budget_prod_map_WH)
+
+ODS_UP_Expense_Budget_prod_map_WH.set_downstream(UP_Expense_Budget_prod_map_STG)
+
+UP_Expense_Budget_prod_map_STG.set_downstream(ODS_UP_Expense_Budget_prod_map_LD)
+
+ODS_UP_Expense_Budget_prod_map_LD.set_downstream(UP_Expense_Budget_prod_map)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_QAM.ODS_UQ_MtlScrapCost_WH
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_MtlScrapCost_WH)
+
+ODS_UQ_MtlScrapCost_WH.set_downstream(UQ_MtlScrapCost_STG)
+
+UQ_MtlScrapCost_STG.set_downstream(ODS_UQ_MtlScrapCost_LD)
+
+ODS_UQ_MtlScrapCost_LD.set_downstream(UQ_MtlScrapCost)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_CSDCustomerPaidService_WH)
+
+ODS_UQ_CSDCustomerPaidService_WH.set_downstream(UQ_CSDCustomerPaidService_STG)
+
+UQ_CSDCustomerPaidService_STG.set_downstream(ODS_UQ_CSDCustomerPaidService_LD)
+
+ODS_UQ_CSDCustomerPaidService_LD.set_downstream(UQ_CSDCustomerPaidService)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_CSDPlannedShippingQty_WH)
+
+ODS_UQ_CSDPlannedShippingQty_WH.set_downstream(UQ_CSDPlannedShippingQty_STG)
+
+UQ_CSDPlannedShippingQty_STG.set_downstream(ODS_UQ_CSDPlannedShippingQty_LD)
+
+ODS_UQ_CSDPlannedShippingQty_LD.set_downstream(UQ_CSDPlannedShippingQty)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_InventoryOwner_WH)
+
+ODS_UQ_InventoryOwner_WH.set_downstream(UQ_InventoryOwner_STG)
+
+UQ_InventoryOwner_STG.set_downstream(ODS_UQ_InventoryOwner_LD)
+
+ODS_UQ_InventoryOwner_LD.set_downstream(UQ_InventoryOwner)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_OnSiteReworkQty_WH)
+
+ODS_UQ_OnSiteReworkQty_WH.set_downstream(UQ_OnSiteReworkQty_STG)
+
+UQ_OnSiteReworkQty_STG.set_downstream(ODS_UQ_OnSiteReworkQty_LD)
+
+ODS_UQ_OnSiteReworkQty_LD.set_downstream(UQ_OnSiteReworkQty)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_QualityReturnQty_WH)
+
+ODS_UQ_QualityReturnQty_WH.set_downstream(UQ_QualityReturnQty_STG)
+
+UQ_QualityReturnQty_STG.set_downstream(ODS_UQ_QualityReturnQty_LD)
+
+ODS_UQ_QualityReturnQty_LD.set_downstream(UQ_QualityReturnQty)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_JQMList_WH)
+
+ODS_UQ_JQMList_WH.set_downstream(UQ_JQMList_STG)
+
+UQ_JQMList_STG.set_downstream(ODS_UQ_JQMList_LD)
+
+ODS_UQ_JQMList_LD.set_downstream(UQ_JQMList)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_S1_WH)
+
+ODS_UQ_IQC_DailyManpower_S1_WH.set_downstream(UQ_IQC_DailyManpower_S1_STG)
+
+UQ_IQC_DailyManpower_S1_STG.set_downstream(ODS_UQ_IQC_DailyManpower_S1_LD)
+
+ODS_UQ_IQC_DailyManpower_S1_LD.set_downstream(UQ_IQC_DailyManpower_S1)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NQJ_WH)
+
+ODS_UQ_IQC_DailyManpower_NQJ_WH.set_downstream(UQ_IQC_DailyManpower_NQJ_STG)
+
+UQ_IQC_DailyManpower_NQJ_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NQJ_LD)
+
+ODS_UQ_IQC_DailyManpower_NQJ_LD.set_downstream(UQ_IQC_DailyManpower_NQJ)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NYC_WH)
+
+ODS_UQ_IQC_DailyManpower_NYC_WH.set_downstream(UQ_IQC_DailyManpower_NYC_STG)
+
+UQ_IQC_DailyManpower_NYC_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NYC_LD)
+
+ODS_UQ_IQC_DailyManpower_NYC_LD.set_downstream(UQ_IQC_DailyManpower_NYC)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NQX_WH)
+
+ODS_UQ_IQC_DailyManpower_NQX_WH.set_downstream(UQ_IQC_DailyManpower_NQX_STG)
+
+UQ_IQC_DailyManpower_NQX_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NQX_LD)
+
+ODS_UQ_IQC_DailyManpower_NQX_LD.set_downstream(UQ_IQC_DailyManpower_NQX)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NVN_WH)
+
+ODS_UQ_IQC_DailyManpower_NVN_WH.set_downstream(UQ_IQC_DailyManpower_NVN_STG)
+
+UQ_IQC_DailyManpower_NVN_STG.set_downstream(ODS_UQ_IQC_DailyManpower_NVN_LD)
+
+ODS_UQ_IQC_DailyManpower_NVN_LD.set_downstream(UQ_IQC_DailyManpower_NVN)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_IQC_DailyManpower_S2_WH)
+
+ODS_UQ_IQC_DailyManpower_S2_WH.set_downstream(UQ_IQC_DailyManpower_S2_STG)
+
+UQ_IQC_DailyManpower_S2_STG.set_downstream(ODS_UQ_IQC_DailyManpower_S2_LD)
+
+ODS_UQ_IQC_DailyManpower_S2_LD.set_downstream(UQ_IQC_DailyManpower_S2)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_InventoryOwnerList_WH)
+
+ODS_UQ_InventoryOwnerList_WH.set_downstream(UQ_InventoryOwnerList_STG)
+
+UQ_InventoryOwnerList_STG.set_downstream(ODS_UQ_InventoryOwnerList_LD)
+
+ODS_UQ_InventoryOwnerList_LD.set_downstream(UQ_InventoryOwnerList)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_MoPartType_WH)
+
+ODS_UQ_MoPartType_WH.set_downstream(UQ_MoPartType_STG)
+
+UQ_MoPartType_STG.set_downstream(ODS_UQ_MoPartType_LD)
+
+ODS_UQ_MoPartType_LD.set_downstream(UQ_MoPartType)
+proxy_D_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_Escape_WH)
+
+ODS_UQ_Escape_WH.set_downstream(UQ_Escape_STG)
+
+UQ_Escape_STG.set_downstream(ODS_UQ_Escape_LD)
+
+ODS_UQ_Escape_LD.set_downstream(UQ_Escape)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: D_ODS_SCM.ODS_US_reason_code_WH
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_US_reason_code_WH)
+
+ODS_US_reason_code_WH.set_downstream(US_reason_code_STG)
+
+US_reason_code_STG.set_downstream(ODS_US_reason_code_LD)
+
+ODS_US_reason_code_LD.set_downstream(US_reason_code)
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_US_scrap_reason_code_WH)
+
+ODS_US_scrap_reason_code_WH.set_downstream(US_scrap_reason_code_STG)
+
+US_scrap_reason_code_STG.set_downstream(ODS_US_scrap_reason_code_LD)
+
+ODS_US_scrap_reason_code_LD.set_downstream(US_scrap_reason_code)
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_US_BOM_PRODUCT_LIST_WH)
+
+ODS_US_BOM_PRODUCT_LIST_WH.set_downstream(US_BOM_PRODUCT_LIST_STG)
+
+US_BOM_PRODUCT_LIST_STG.set_downstream(ODS_US_BOM_PRODUCT_LIST_LD)
+
+ODS_US_BOM_PRODUCT_LIST_LD.set_downstream(US_BOM_PRODUCT_LIST)
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_US_POTransfer_WH)
+
+ODS_US_POTransfer_WH.set_downstream(US_POTransfer_STG)
+
+US_POTransfer_STG.set_downstream(ODS_US_POTransfer_LD)
+
+ODS_US_POTransfer_LD.set_downstream(US_POTransfer)
+proxy_D_ODS_SCMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_US_ExcessonHandTransfer_WH)
+
+ODS_US_ExcessonHandTransfer_WH.set_downstream(US_ExcessonHandTransfer_STG)
+
+US_ExcessonHandTransfer_STG.set_downstream(ODS_US_ExcessonHandTransfer_LD)
+
+ODS_US_ExcessonHandTransfer_LD.set_downstream(US_ExcessonHandTransfer)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: W_ODS_QAM.ODS_UQ_FaultInjectionRecord_WH
+proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_FaultInjectionRecord_WH)
+
+ODS_UQ_FaultInjectionRecord_WH.set_downstream(UQ_FaultInjectionRecord_STG)
+
+UQ_FaultInjectionRecord_STG.set_downstream(ODS_UQ_FaultInjectionRecord_LD)
+
+ODS_UQ_FaultInjectionRecord_LD.set_downstream(UQ_FaultInjectionRecord)
+proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_QSCANTrackingRecord_WH)
+
+ODS_UQ_QSCANTrackingRecord_WH.set_downstream(UQ_QSCANTrackingRecord_STG)
+
+UQ_QSCANTrackingRecord_STG.set_downstream(ODS_UQ_QSCANTrackingRecord_LD)
+
+ODS_UQ_QSCANTrackingRecord_LD.set_downstream(UQ_QSCANTrackingRecord)
+proxy_W_ODS_QAMxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UQ_ModelMPInfo_WH)
+
+ODS_UQ_ModelMPInfo_WH.set_downstream(UQ_ModelMPInfo_STG)
+
+UQ_ModelMPInfo_STG.set_downstream(ODS_UQ_ModelMPInfo_LD)
+
+ODS_UQ_ModelMPInfo_LD.set_downstream(UQ_ModelMPInfo)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: M_ODS_CUS.ODS_UC_Customer_Grouping_Map_WH
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Customer_Grouping_Map_WH)
+
+ODS_UC_Customer_Grouping_Map_WH.set_downstream(UC_Customer_Grouping_Map_STG)
+
+UC_Customer_Grouping_Map_STG.set_downstream(ODS_UC_Customer_Grouping_Map_LD)
+
+ODS_UC_Customer_Grouping_Map_LD.set_downstream(UC_Customer_Grouping_Map)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Group_Customer_Location_WH)
+
+ODS_UC_Group_Customer_Location_WH.set_downstream(UC_Group_Customer_Location_STG)
+
+UC_Group_Customer_Location_STG.set_downstream(ODS_UC_Group_Customer_Location_LD)
+
+ODS_UC_Group_Customer_Location_LD.set_downstream(UC_Group_Customer_Location)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Project_Decision_Customer_WH)
+
+ODS_UC_Project_Decision_Customer_WH.set_downstream(UC_Project_Decision_Customer_STG)
+
+UC_Project_Decision_Customer_STG.set_downstream(ODS_UC_Project_Decision_Customer_LD)
+
+ODS_UC_Project_Decision_Customer_LD.set_downstream(UC_Project_Decision_Customer)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_NA_Customer_Sub_Group_WH)
+
+ODS_UC_NA_Customer_Sub_Group_WH.set_downstream(UC_NA_Customer_Sub_Group_STG)
+
+UC_NA_Customer_Sub_Group_STG.set_downstream(ODS_UC_NA_Customer_Sub_Group_LD)
+
+ODS_UC_NA_Customer_Sub_Group_LD.set_downstream(UC_NA_Customer_Sub_Group)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Group_Customer_Industry_Type_WH)
+
+ODS_UC_Group_Customer_Industry_Type_WH.set_downstream(UC_Group_Customer_Industry_Type_STG)
+
+UC_Group_Customer_Industry_Type_STG.set_downstream(ODS_UC_Group_Customer_Industry_Type_LD)
+
+ODS_UC_Group_Customer_Industry_Type_LD.set_downstream(UC_Group_Customer_Industry_Type)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Global_Telecom_Operator_WH)
+
+ODS_UC_Global_Telecom_Operator_WH.set_downstream(UC_Global_Telecom_Operator_STG)
+
+UC_Global_Telecom_Operator_STG.set_downstream(ODS_UC_Global_Telecom_Operator_LD)
+
+ODS_UC_Global_Telecom_Operator_LD.set_downstream(UC_Global_Telecom_Operator)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Product_Mapping_Table_WH)
+
+ODS_UC_Product_Mapping_Table_WH.set_downstream(UC_Product_Mapping_Table_STG)
+
+UC_Product_Mapping_Table_STG.set_downstream(ODS_UC_Product_Mapping_Table_LD)
+
+ODS_UC_Product_Mapping_Table_LD.set_downstream(UC_Product_Mapping_Table)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Market_Share_Market_Shipment_WH)
+
+ODS_UC_Market_Share_Market_Shipment_WH.set_downstream(UC_Market_Share_Market_Shipment_STG)
+
+UC_Market_Share_Market_Shipment_STG.set_downstream(ODS_UC_Market_Share_Market_Shipment_LD)
+
+ODS_UC_Market_Share_Market_Shipment_LD.set_downstream(UC_Market_Share_Market_Shipment)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH)
+
+ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_WH.set_downstream(UC_WNC_BI_SHIPMENT_QTY_TABLE_STG)
+
+UC_WNC_BI_SHIPMENT_QTY_TABLE_STG.set_downstream(ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_LD)
+
+ODS_UC_WNC_BI_SHIPMENT_QTY_TABLE_LD.set_downstream(UC_WNC_BI_SHIPMENT_QTY_TABLE)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Product_Segment_Map_table_WH)
+
+ODS_UC_Product_Segment_Map_table_WH.set_downstream(UC_Product_Segment_Map_table_STG)
+
+UC_Product_Segment_Map_table_STG.set_downstream(ODS_UC_Product_Segment_Map_table_LD)
+
+ODS_UC_Product_Segment_Map_table_LD.set_downstream(UC_Product_Segment_Map_table)
+proxy_M_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_Market_Tam_Product_Map_WH)
+
+ODS_UC_Market_Tam_Product_Map_WH.set_downstream(UC_Market_Tam_Product_Map_STG)
+
+UC_Market_Tam_Product_Map_STG.set_downstream(ODS_UC_Market_Tam_Product_Map_LD)
+
+ODS_UC_Market_Tam_Product_Map_LD.set_downstream(UC_Market_Tam_Product_Map)
+
+# 	XSLT:loop: Rows-by-JOB_FLOW_NAME: JOB_NAME: START{{
+# 	 	FLOW: Y_ODS_CUS.ODS_UC_SW_Centric_Product_Model_WH
+proxy_Y_ODS_CUSxD_STG_INIT__SYS_STS_STG.set_downstream(ODS_UC_SW_Centric_Product_Model_WH)
+
+ODS_UC_SW_Centric_Product_Model_WH.set_downstream(UC_SW_Centric_Product_Model_STG)
+
+UC_SW_Centric_Product_Model_STG.set_downstream(ODS_UC_SW_Centric_Product_Model_LD)
+
+ODS_UC_SW_Centric_Product_Model_LD.set_downstream(UC_SW_Centric_Product_Model)

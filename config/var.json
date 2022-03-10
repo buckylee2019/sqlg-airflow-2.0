@@ -1,12 +1,13 @@
 {
-    "sql_path": "/usr/local/airflow/sql/",
-    "DIR_ETLBASE": "/usr/local/airflow/etl_base/",
-    "DIR_SOURCE": "/usr/local/airflow/etl_base/SOURCE/",
-    "DIR_TEMP": "/usr/local/airflow/etl_base/DATA/",
-    "DIR_MSG": "/usr/local/airflow/etl_base/MSG/",
-    "DIR_BIN": "/usr/local/airflow/etl_base/bin/",
+    "sql_path": "/opt/airflow/sql/",
+    "DIR_ETLBASE": "/opt/airflow/etl_base/",
+    "DIR_SOURCE": "/opt/airflow/etl_base/SOURCE/",
+    "DIR_TEMP": "/opt/airflow/etl_base/DATA/",
+    "DIR_MSG": "/opt/airflow/etl_base/MSG/",
+    "DIR_BIN": "/opt/airflow/etl_base/bin/",
     "ETLUSER": "sa",
     "ETLPWD": "passw0rd",
-    "DW_HOST": "172.17.0.1",
-	"EDC": "20200101"
+    "DW_HOST": "172.24.0.9",
+	"EDC": "20200101",
+    "sqlg_execution_date": "20220101"
 }

@@ -53,7 +53,7 @@ class OracleOperatorWithTemplatedParams(BaseOperator):
         super(OracleOperatorWithTemplatedParams, self).__init__(*args, **kwargs)
         self.oracle_conn_id = oracle_conn_id
         self.sql = sql
-        self.autocommit = autocommit
+        self.auto_commit = autocommit
         self.parameters = parameters
 
     def execute(self, context):
@@ -61,5 +61,5 @@ class OracleOperatorWithTemplatedParams(BaseOperator):
         hook = OracleHook(oracle_conn_id=self.oracle_conn_id)
         hook.run(
             self.sql,
-            autocommit=self.autocommit,
+            autocommit=self.auto_commit,
             parameters=self.parameters)
