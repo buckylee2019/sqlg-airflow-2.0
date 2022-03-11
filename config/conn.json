@@ -1,0 +1,18 @@
+{
+    "mssql_default": {
+        "conn_type": "Microsoft SQL Server",
+        "host": "10.6.5.78",
+        "schema": "ODPDEV",
+        "login": "sa",
+        "password": "passw0rd",
+        "port": "1433"
+    },
+    "oracle_dev": {
+        "conn_type": "oracle",
+        "host": "172.24.0.9",
+        "schema": "etladm",
+        "login": "etladm",
+        "password": "etladm",
+        "port": "9876"
+    }	
+}
